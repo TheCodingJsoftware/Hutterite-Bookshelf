@@ -1,0 +1,370 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+    <title>Hutterite Bookshelf</title>
+    <meta charset="utf-8">
+    <meta property="og:title" content="Hutterite Bookshelf" />
+    <meta property="og:url" content="http://audioarchives.hbni.net:5050/documents.html" />
+    <meta property="og:image" content="http://audioarchives.hbni.net/static/hbnilogo.png" />
+    <meta property="og:description" content="Your own bookshelf." />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/static/favicon.png">
+    <link rel="manifest" href="/static/manifest.json">
+    <script src="/static/jquery.js"></script>
+    <script src="/static/bootstrap.js"></script>
+    <script src="/static/bootstrap-select.js"></script>
+    <script type="module" src="/static/zero-md.min.js"></script>
+    <link type="text/css" href="/static/css/bootstrap.css" rel="stylesheet" />
+    <link type="text/css" href="/static/css/bootstrap-select.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/materialize.min.css">
+    <link href="/static/css/suneditor.min.css" rel="stylesheet">
+    <script src="/static/suneditor.min.js"></script>
+    <link href="/static/css/icon.css" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href='/static/css/main.css' />
+</head>
+
+<body>
+    <div id="modal1" class="modal modal-fixed-footer">
+        <div class="modal-content">
+            <h4>Terms of Use</h4>
+            <section>
+                <p>Welcome to the Hutterite Bookshelf! A public archive of hutterian documents.</p>
+                <h5>1. Acceptance of Terms</h5>
+                <p>
+                    By using our website and services, you agree to follow these terms of
+                    use.
+                </p>
+                <h5>2. Description of Service</h5>
+                <p>
+                    The Hutterite Bookshelf service provides a platform for users to access, create, and share Christian
+                    songs, biblical
+                    texts, Hutterite documents, and related content. Users can create personalized arrangements,
+                    designate them as public or
+                    private, and share access codes with others.
+                </p>
+                <h5>3. User Responsibilities</h5>
+                <p>
+                    Users can create public or private arrangements, and anyone with the corresponding access code can
+                    modify, edit, or
+                    delete the content. It is the user's responsibility to exercise caution and refrain from including
+                    sensitive information,
+                    passwords, or inappropriate content in the arrangements.
+                </p>
+                <p>
+                    The admin has the authority to remove inappropriate or harmful content without prior notice.
+                </p>
+                <h5>4. Data Security</h5>
+                <p>
+                    The Service does not encrypt user data. Users are encouraged to be mindful of this when adding
+                    content.
+                    Daily backups are made, and information is logged to facilitate recovery in the event of accidental
+                    data loss.
+                </p>
+                <h5>5. Changes to Terms</h5>
+                <p>
+                    The Terms of Use may change over time. Users are responsible for regularly reviewing the terms.
+                </p>
+                <h5>6. Service Status</h5>
+                <p>
+                    The Service is provided for free.
+                </p>
+                <h5>7. User Feedback</h5>
+                <p>
+                    For any questions, comments, or concerns please email the owner of this service. 
+                </p>
+                <h5>8. Limitation of Liability</h5>
+                <p>
+                    The admin does not accept responsibility for user-shared content or any losses incurred, as the
+                    service is provided
+                    "as is."
+                </p>
+                <h5>9. Privacy and Logging</h5>
+                <p>
+                    No user information, IP addresses, names, or tracking is conducted of any kind, except for content changes
+                    logged for data recovery
+                    purposes.
+                </p>
+                Last update: 2024-02-04
+            </section>
+        </div>
+        <div class="modal-footer">
+            <a class="modal-action modal-close waves-effect btn" id="disagreeButton" onclick="userAgree()"><i
+                    class="material-icons left">close</i>Close</a>
+            <a class="modal-action modal-close waves-effect btn" id="agreeButton" onclick="$('#modal1').hide()"><i
+                    class="material-icons left">check</i>Agree</a>
+        </div>
+    </div>
+    <div id="homePage">
+        <ul id="home-slide-out" class="side-nav">
+            <li>
+                <div class="user-view">
+                    <div class="row">
+                        <div class="row" style="margin-bottom: 0;">
+                            <div class="col s9 push-s3">
+                                <h4 style="font-size: 22px; text-align: left; margin: 0; margin-top: 10px;">Hutterite
+                                    Bookshelf
+                                </h4>
+                                <p>Your own bookshelf.</p>
+                            </div>
+                            <div class="col s1 pull-s10">
+                                <img class="circle" style="background-color: black;" src="/static/icon.png" alt="logo">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li>
+                <div class="divider"></div>
+            </li>
+            <li><a class="subheader">Developed by the TheCodingJ's</a></li>
+            <li><a onclick="$('#modal1').show();"><i class="material-icons">description</i>Terms of Use Policy</a></li>
+            <footer class="page-footer">
+                <div class="container" style="padding: 0;">
+                    <p class="grey-text text-lighten-4" style="line-height: 15px;">For questions, comments, or
+                        concerns about this serivce please email:<a
+                            href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a></p>
+                </div>
+                <div class="footer-copyright">
+                    <div class="container" style="padding: 0;">
+                        © 2024 TheCodingJ'software
+                    </div>
+                </div>
+            </footer>
+        </ul>
+        <nav>
+            <div class="nav-wrapper">
+                <a class="brand-logo center" style="font-size: 20px;">Hutterite Bookshelf</a>
+                <ul id="nav-mobile" class="left">
+                    <li><a data-activates="home-slide-out"
+                            class="waves-effect waves-light btn-flat home-button-collapse" style="padding: 0;"><i
+                                class="material-icons" style="font-size: 36px;">menu</i></a></li>
+                </ul>
+            </div>
+        </nav>
+        <br>
+        <br>
+        <div class="contents">
+            <div>
+                <div class="search-box">
+                    <form class="search-form">
+                        <input type="text" placeholder="Search for songs" id="search" autocomplete="off">
+                    </form>
+                </div>
+                <input type="checkbox" class="filled-in" id="searchCheckbox" />
+                <label for="searchCheckbox">Search body</label>
+                <div style="text-align: center; ">
+                    <div class="preloader-wrapper big active" id="loader">
+                        <div class="spinner-layer spinner-aqua-only">
+                            <div class="circle-clipper left">
+                                <div class="circle"></div>
+                            </div>
+                            <div class="gap-patch">
+                                <div class="circle"></div>
+                            </div>
+                            <div class="circle-clipper right">
+                                <div class="circle"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="noTextMessage"></div>
+        <div class="files-list" id="filesListContainer"></div>
+        <div class="form-popup" id="createCodeForm">
+            <form class="form-container">
+                <h4>Create Book Arrangement</h4>
+                <div class="row">
+                    <div class="input-field col s6">
+                        <input placeholder="Book name" id="folder_name" type="text" class="validate" required>
+                        <label for="folder_name">Arrangement Name</label>
+                    </div>
+                    <div class="input-field col s6">
+                        <input placeholder="Code name" id="code_name" type="text" class="validate" required>
+                        <label for="code_name">Code Name</label>
+                    </div>
+                </div>
+                <p>
+                    <input type="checkbox" class="filled-in" id="privateCheckbox" checked="checked" />
+                    <label for="privateCheckbox">Private Folder</label>
+                </p>
+
+                <a type="submit" class="waves-effect waves-light btn" onclick="createLibrary(event)">Submit
+                    <i class="material-icons left">send</i>
+                </a>
+                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeCreateCodeForm()">Close
+                    <i class="material-icons left">close</i>
+                </a>
+            </form>
+        </div>
+        <div class="form-popup" id="addExistingCodeForm">
+            <form class="form-container">
+                <h4>Add Existing Arrangement</h4>
+                <div class="input-field col s6">
+                    <select id="codeSelection" multiple>
+                    </select>
+                    <label for="codeSelection">Select public arrangement codes</label>
+                </div>
+                <a type="submit" class="waves-effect waves-light btn" onclick="addCode(event)">Submit
+                    <i class="material-icons left">send</i>
+                </a>
+                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeAddExistingCodeForm()">Close
+                    <i class="material-icons left">close</i>
+                </a>
+            </form>
+        </div>
+        <div class="form-popup" id="createGroup">
+            <form class="form-container">
+                <h4>Create Group</h4>
+                <div class="row">
+                    <div class="input-field col s8">
+                        <input placeholder="Group name" id="group_name" type="text" class="validate" required>
+                        <label for="group_name">Group Name</label>
+                    </div>
+                </div>
+                <a type="submit" class="waves-effect waves-light btn" id="newGroupSubmitButton">Submit
+                    <i class="material-icons left">send</i>
+                </a>
+                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeForm('createGroup')">Close
+                    <i class="material-icons left">close</i>
+                </a>
+            </form>
+        </div>
+        <div class="form-popup" id="editGroup">
+            <form class="form-container">
+                <h4>Edit Group</h4>
+                <div class="row">
+                    <div class="input-field col s8">
+                        <input placeholder="Group name" id="new_group_name" type="text" class="validate" required>
+                        <label for="new_group_name">Group Name</label>
+                    </div>
+                    <div class="input-field col s4">
+                        <a class="btn-floating aqua" id="delete_group"><i class="material-icons">delete</i></a>
+                    </div>
+                </div>
+                <a type="submit" class="waves-effect waves-light btn" id="groupRenameSubmitButton">Save
+                    <i class="material-icons left">save</i>
+                </a>
+                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeForm('editGroup')">Close
+                    <i class="material-icons left">close</i>
+                </a>
+            </form>
+        </div>
+        <div class="form-popup" id="editArrangement">
+            <form class="form-container">
+                <h4>Edit Book Arrangement</h4>
+                <div class="row">
+                    <div class="input-field col s4">
+                        <input placeholder="Book name" id="new_folder_name" type="text" class="validate" required>
+                        <label for="new_folder_name">Arrangement Name</label>
+                    </div>
+                    <div class="input-field col s4">
+                        <input placeholder="Code name" id="new_code_name" type="text" class="validate" required>
+                        <label for="new_code_name">Code Name</label>
+                    </div>
+                    <div class="input-field col s4">
+                        <a class="btn-floating aqua" id="delete_arrangement"><i class="material-icons">delete</i></a>
+                    </div>
+                </div>
+                <p>
+                    <input type="checkbox" class="filled-in" id="new_privateCheckbox" checked="checked" />
+                    <label for="new_privateCheckbox">Private Folder</label>
+                </p>
+
+                <a type="submit" class="waves-effect waves-light btn" id="arrangementRenameSubmitButton">Save
+                    <i class="material-icons left">save</i>
+                </a>
+                <a type="button" class="waves-effect waves-light btn cancel"
+                    onclick="closeForm('editArrangement')">Close
+                    <i class="material-icons left">close</i>
+                </a>
+            </form>
+        </div>
+        <div class="form-popup" id="editSong">
+            <form class="form-container">
+                <h4>Edit File</h4>
+                <div class="row">
+                    <div class="input-field col s10">
+                        <input placeholder="Song name" id="new_song_name" type="text" class="validate" required>
+                        <label for="new_song_name">File Name</label>
+                    </div>
+                    <div class="input-field col s2">
+                        <a class="btn-floating aqua" id="delete_song"><i class="material-icons">delete</i></a>
+                    </div>
+                </div>
+                <textarea id="songTextArea"></textarea>
+                <a type="submit" class="waves-effect waves-light btn" id="submitEditSong">Save
+                    <i class="material-icons left">save</i>
+                </a>
+                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeEditSongForm()">Close
+                    <i class="material-icons left">close</i>
+                </a>
+            </form>
+        </div>
+        <div class="fixed-action-btn horizontal click-to-toggle" id="floating-button">
+            <a class="btn-floating btn-large aqua" id="code-options">
+                <i class="material-icons">more_horiz</i>
+            </a>
+            <ul>
+                <li><a class="btn-floating aqua" onclick="openAddExistingCodeForm()"><i
+                            class="material-icons">add_box</i></a></li>
+                <li><a class="btn-floating aqua" onclick="openCreateCodeForm()"><i
+                            class="material-icons">create_new_folder</i></a></li>
+            </ul>
+        </div>
+        <br>
+        <br>
+    </div>
+    <div id="songPage" style="display: none;">
+        <ul id="song-slide-out" class="side-nav">
+            <li><a id="navbarArrangementName"></a></li>
+            <li>
+                <div class="divider"></div>
+            </li>
+            <input type="text" placeholder="Search for songs" id="navbarSearch" autocomplete="off">
+            <div class="collection" id="navbarSongsList">
+            </div>
+        </ul>
+        <nav>
+            <div class="nav-wrapper">
+                <a style="font-size: 16px;" id="songPageNavBarTitle"></a>
+                <ul id="nav-mobile" class="left">
+                    <li> <a data-activates="song-slide-out"
+                            class="waves-effect waves-light btn-flat song-button-collapse" style="padding: 0;"><i
+                                class="material-icons" style="font-size: 36px;">menu</i></a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <br>
+        <br>
+        <br>
+        <div id="wrapper">
+            <div id="container">
+                <article>
+                    <section class="open-book">
+                        <h2 id="chapter-title"></h2>
+                        <p>
+                        <div id="text"></div>
+                        </p>
+                    </section>
+                </article>
+            </div>
+        </div>
+        <div style="text-align: center; margin-bottom: 10px;">
+            <a class="waves-effect waves-light btn previous" id="previousSongButton"><i
+                    class="material-icons">navigate_before</i></a>
+            <a class="waves-effect waves-light btn next" id="nextSongButton"><i
+                    class="material-icons">navigate_next</i></a>
+        </div>
+        <a class="btn-floating btn-large waves-effect waves-light aqua" onclick="backToHomePage()"
+            style="position: fixed; bottom: 35px; right: 25px;"><i class="material-icons">home</i></a>
+    </div>
+</body>
+<script src="/static/materialize.min.js"></script>
+<script src="/static/script.js"></script>
+
+</html>
