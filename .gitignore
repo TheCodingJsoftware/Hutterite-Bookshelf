@@ -2,3 +2,9 @@ static/Documents
 data.json
 custom_content.json
 codes.json
+uploads/
+tmp/
+.vscode/
+__pycache__/
+test.py
+test2.py
