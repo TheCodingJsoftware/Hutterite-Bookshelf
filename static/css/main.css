@@ -112,10 +112,12 @@ details[open] {
 #editGroup {
     width: 300px;
 }
-
+#editArrangement{
+    top: 40%;
+}
 #createCodeForm {
     position: fixed;
-    top: 30%;
+    top: 40%;
     left: 50%;
     width: 80vw;
     transform: translate(-50%, 10%);

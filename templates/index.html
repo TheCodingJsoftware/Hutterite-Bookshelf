@@ -9,7 +9,6 @@
     <meta property="og:url" content="http://audioarchives.hbni.net:5050/documents.html" />
     <meta property="og:image" content="http://audioarchives.hbni.net/static/hbnilogo.png" />
     <meta property="og:description" content="Your own bookshelf." />
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/static/favicon.png">
     <link rel="manifest" href="/static/manifest.json">
@@ -73,7 +72,7 @@
                 </p>
                 <h5>7. User Feedback</h5>
                 <p>
-                    For any questions, comments, or concerns please email the owner of this service. 
+                    For any questions, comments, or concerns please email the owner of this service.
                 </p>
                 <h5>8. Limitation of Liability</h5>
                 <p>
@@ -83,7 +82,8 @@
                 </p>
                 <h5>9. Privacy and Logging</h5>
                 <p>
-                    No user information, IP addresses, names, or tracking is conducted of any kind, except for content changes
+                    No user information, IP addresses, names, or tracking is conducted of any kind, except for content
+                    changes
                     logged for data recovery
                     purposes.
                 </p>
@@ -181,17 +181,28 @@
                     <div class="input-field col s6">
                         <input placeholder="Book name" id="folder_name" type="text" class="validate" required>
                         <label for="folder_name">Arrangement Name</label>
+                        <p style="font-style: italic; font-size: 12px; color: gray;">The name that will appear in the
+                            app.</p>
                     </div>
                     <div class="input-field col s6">
                         <input placeholder="Code name" id="code_name" type="text" class="validate" required>
                         <label for="code_name">Code Name</label>
+                        <p style="font-style: italic; font-size: 12px; color: gray;">The code to access your content.
+                        </p>
                     </div>
                 </div>
-                <p>
-                    <input type="checkbox" class="filled-in" id="privateCheckbox" checked="checked" />
-                    <label for="privateCheckbox">Private Folder</label>
-                </p>
-
+                <input type="checkbox" class="filled-in" id="privateCheckbox" checked="checked" />
+                <label for="privateCheckbox">Do you want to keep this private</label>
+                <input type="checkbox" class="filled-in" id="publicEditCheckbox" />
+                <label for="publicEditCheckbox">Allow the public to make edits</label>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <input placeholder="Password" id="edit_password" type="text" class="validate" required>
+                        <label for="edit_password">Password</label>
+                        <p style="font-style: italic; font-size: 12px; color: gray;">Password to gain access to edit
+                            files.</p>
+                    </div>
+                </div>
                 <a type="submit" class="waves-effect waves-light btn" onclick="createLibrary(event)">Submit
                     <i class="material-icons left">send</i>
                 </a>
@@ -269,10 +280,18 @@
                         <a class="btn-floating aqua" id="delete_arrangement"><i class="material-icons">delete</i></a>
                     </div>
                 </div>
-                <p>
-                    <input type="checkbox" class="filled-in" id="new_privateCheckbox" checked="checked" />
-                    <label for="new_privateCheckbox">Private Folder</label>
-                </p>
+                <input type="checkbox" class="filled-in" id="new_privateCheckbox" checked="checked" />
+                <label for="new_privateCheckbox">Do you want to keep this private</label>
+                <input type="checkbox" class="filled-in" id="new_publicEditCheckbox" />
+                <label for="new_publicEditCheckbox">Allow the public to make edits</label>
+                <div class="row">
+                    <div class="input-field col s12">
+                        <input placeholder="Password" id="new_edit_password" type="text" class="validate" required>
+                        <label for="new_edit_password">Password</label>
+                        <p style="font-style: italic; font-size: 12px; color: gray;">Password to gain access to edit
+                            files.</p>
+                    </div>
+                </div>
 
                 <a type="submit" class="waves-effect waves-light btn" id="arrangementRenameSubmitButton">Save
                     <i class="material-icons left">save</i>

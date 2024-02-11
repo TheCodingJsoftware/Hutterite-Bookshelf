@@ -20,8 +20,6 @@ function populateCodeOptions() {
         .then(codesData => {
             var selectElement = document.getElementById('codeSelection');
             selectElement.innerHTML = '';
-            // selectElement.innerHTML = '<option value="" disabled selected>Choose a public code</option>';
-
             Object.keys(codesData).forEach(function (category) {
                 if (!codesData[category]['private']) {
                     var optionElement = document.createElement('option');
@@ -46,10 +44,28 @@ function codeIsInCookies(other_code) {
         if (cookie_code == '') {
             return false;
         }
-        code = cookie_code.split('=')[0].replace("\"", "");
-        folder_name = cookie_code.split('=')[1].replace(/"/g, '').replace("\"", "");
+        cookie_code = cookie_code.replace("\\073", ";").replace("\"", "");
+        var code = cookie_code.split('=')[0];
+        var folder_name = cookie_code.split('=')[1].replace(/"/g, '').split(';')[0];
         if (other_code == code || other_code == folder_name) {
             return true;
+        }
+    }
+    return false;
+}
+
+function canEdit(other_code){
+    var cookie_codes = document.cookie.split('; ');
+    for (var cookie_code of cookie_codes) {
+        if (cookie_code == '') {
+            return false;
+        }
+        cookie_code = cookie_code.replace("\\073", ";").replace("\"", "");
+        var code = cookie_code.split('=')[0];
+        var canEdit = cookie_code.split('edit=')[1].replace("\"", "");
+        var folder_name = cookie_code.split('=')[1].replace(/"/g, '').split(';')[0];
+        if (other_code == code || other_code == folder_name) {
+            return canEdit == "True"
         }
     }
     return false;
@@ -58,8 +74,10 @@ function codeIsInCookies(other_code) {
 function getCodeName(arrangement) {
     var cookie_codes = document.cookie.split('; ');
     for (var cookie_code of cookie_codes) {
-        code = cookie_code.split('=')[0].replace("\"", "");
-        folder_name = cookie_code.split('=')[1].replace(/"/g, '').replace("\"", "");
+        cookie_code = cookie_code.replace("\\073", ";").replace("\"", "").replace(';edit', '');
+        var code = cookie_code.split('=')[0].replace("\"", "");
+        var folder_name = cookie_code.split('=')[1].replace(/"/g, '').replace("\"", "");
+        console.log(code, arrangement, folder_name);
         if (arrangement == folder_name) {
             return code;
         }
@@ -68,7 +86,6 @@ function getCodeName(arrangement) {
 
 function updateOnlineStatus() {
     if (navigator.onLine) {
-        // Materialize.toast('You are online, updating files!', 3000)
         $('#floating-button').show();
     } else {
         Materialize.toast('You are offline, using cache!', 3000)
@@ -95,7 +112,6 @@ function groupCreateFile(arrangement, groupName) {
 }
 
 function groupAddExistingSong(group, groupName) {
-    console.log(group, groupName);
     Materialize.toast("groupAddExistingSong", 3000)
 }
 
@@ -131,8 +147,7 @@ async function groupUploadFIles(group, groupName) {
 }
 
 function renameGroup(arrangement, oldGroupName) {
-    var inputText = document.getElementById('new_group_name');
-    var newGroupName = inputText.value;
+    var newGroupName = document.getElementById('new_group_name').value;
     const apiUrl = `http://10.11.2.76:5000/rename_group/${arrangement}/${oldGroupName}/${newGroupName}`;
     fetch(apiUrl)
         .then(response => {
@@ -158,7 +173,9 @@ function renameArrangement(oldArrangementName, oldCodeName) {
     var newName = document.getElementById('new_folder_name').value;
     var newCode = document.getElementById('new_code_name').value;
     var newPrivate = document.getElementById('new_privateCheckbox').checked;
-    const apiUrl = `http://10.11.2.76:5000/rename_arrangement/${oldArrangementName}/${newName}/${oldCodeName}/${newCode}/${newPrivate}`;
+    var newPublicEdit = document.getElementById('new_publicEditCheckbox').checked;
+    var newPassword = document.getElementById('new_edit_password').value;
+    const apiUrl = `http://10.11.2.76:5000/rename_arrangement/${oldArrangementName}/${newName}/${oldCodeName}/${newCode}/${newPrivate}/${newPublicEdit}/${newPassword}`;
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
@@ -243,7 +260,6 @@ function arrangementCreateFile(arrangement) {
 }
 
 function arrangementAddExistingSongs(arrangement) {
-    console.log(group);
     Materialize.toast("arrangementAddExistingSongs", 3000)
 }
 
@@ -255,14 +271,13 @@ function editTextFromArrangement(arrangement, oldSongName) {
         Form.style.display = "block";
         void Form.offsetWidth;
         Form.style.opacity = 1;
-        var inputText = document.getElementById('new_song_name');
-        inputText.value = oldSongName;
-        var submitButton = document.getElementById('submitEditSong');
-        submitButton.removeAttribute('onclick');
-        submitButton.setAttribute('onclick', `submitEditSong('${arrangement}', '', '${oldSongName}')`);
-        var deleteGroupButton = document.getElementById('delete_song');
-        deleteGroupButton.removeAttribute("onclick");
-        deleteGroupButton.setAttribute('onclick', `deleteSong('${arrangement}', '', '${oldSongName}')`);
+        
+        $('#new_song_name').val(oldSongName)
+        $('#submitEditSong').removeAttr("onclick");
+        $('#submitEditSong').attr('onclick',`submitEditSong('${arrangement}', '', '${oldSongName}')`);
+        $('#delete_song').removeAttr("onclick");
+        $('#delete_song').attr('onclick', `deleteSong('${arrangement}', '', '${oldSongName}')`);
+
         suneditor.insertHTML(data[arrangement][oldSongName]);
         document.body.style.overflow = "hidden";
         window.scrollTo({
@@ -283,14 +298,12 @@ function editTextFromGroup(arrangement, groupName, oldSongName) {
         void Form.offsetWidth;
         Form.style.opacity = 1;
 
-        var inputText = document.getElementById('new_song_name');
-        inputText.value = oldSongName;
-        var submitButton = document.getElementById('submitEditSong');
-        submitButton.removeAttribute('onclick');
-        submitButton.setAttribute('onclick', `submitEditSong('${arrangement}', '${groupName}', '${oldSongName}')`);
-        var deleteGroupButton = document.getElementById('delete_song');
-        deleteGroupButton.removeAttribute("onclick");
-        deleteGroupButton.setAttribute('onclick', `deleteSong('${arrangement}', '${groupName}', '${oldSongName}')`);
+        $('#new_song_name').val(oldSongName)
+        $('#submitEditSong').removeAttr("onclick");
+        $('#submitEditSong').attr('onclick',`submitEditSong('${arrangement}', '${groupName}', '${oldSongName}')`);
+        $('#delete_song').removeAttr("onclick");
+        $('#delete_song').attr('onclick', `deleteSong('${arrangement}', '${groupName}', '${oldSongName}')`);
+
         suneditor.insertHTML(data[arrangement][groupName][oldSongName]);
         document.body.style.overflow = "hidden";
         window.scrollTo({
@@ -332,7 +345,6 @@ function submitEditSong(arrangement, groupName, oldSongName) {
     })
         .then(response => response.json())
         .then(result => {
-            console.log('Edit submitted successfully:', result);
             loadAllSongs();
         })
         .catch(error => {
@@ -341,7 +353,7 @@ function submitEditSong(arrangement, groupName, oldSongName) {
 }
 
 function sumbitAddNewSong(arrangement, groupName) {
-    const song_content = document.getElementById("songTextArea").value;
+    const song_content = suneditor.getContents();
     const songName = document.getElementById("new_song_name").value;
     const data = {
         arrangement: arrangement,
@@ -349,7 +361,6 @@ function sumbitAddNewSong(arrangement, groupName) {
         songName: songName,
         songContent: song_content
     };
-
     fetch('/add_new_song', {
         method: 'POST',
         headers: {
@@ -367,7 +378,6 @@ function sumbitAddNewSong(arrangement, groupName) {
 }
 
 function deleteSong(arrangement, groupName, songName) {
-    const song_content = document.getElementById("songTextArea").value;
     const newSongName = document.getElementById("new_song_name").value;
     const data = {
         arrangement: arrangement,
@@ -448,7 +458,6 @@ function arrangementCreateGroup(arrangement) {
     }
 }
 
-
 const openFileOrFiles = async (multiple = true) => {
     const supportsFileSystemAccess =
         "showOpenFilePicker" in window &&
@@ -470,6 +479,9 @@ const openFileOrFiles = async (multiple = true) => {
                         description: 'Text Files',
                         accept: {
                             'text/plain': ['.txt'],
+                            'application/pdf': ['.pdf'],
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+                            'application/msword': ['.doc'],
                         },
                     },
                 ],
@@ -505,15 +517,16 @@ const openFileOrFiles = async (multiple = true) => {
         if (multiple) {
             input.multiple = true;
         }
-        input.accept = '.txt'; // Set the accept attribute to only allow .txt files
+        input.accept = '.txt, .pdf, .docx, .doc'; // Set the accept attribute to only allow specified file types
         input.addEventListener('change', () => {
             input.remove();
             if (!input.files) {
                 return;
             }
             const selectedFiles = Array.from(input.files);
-            const txtFiles = selectedFiles.filter(file => file.name.endsWith('.txt'));
-            resolve(multiple ? txtFiles : txtFiles[0]);
+            const allowedExtensions = ['.txt', '.pdf', '.docx', '.doc'];
+            const filteredFiles = selectedFiles.filter(file => allowedExtensions.some(ext => file.name.endsWith(ext)));
+            resolve(multiple ? filteredFiles : filteredFiles[0]);
         });
         if ('showPicker' in HTMLInputElement.prototype) {
             input.showPicker();
@@ -549,10 +562,8 @@ function loadAllArrangements() {
                 if (!codeIsInCookies(group)) {
                     continue;
                 }
-                console.log("added group: " + group);
                 details_html += `<details id='details-book'><summary><i class="material-icons" id="book-icon">book</i>${group}</summary><br><div id="${group}" style="overflow-y: scroll; max-height: 300px;"></div>`;
                 for (const [groupName, groupData] of Object.entries(files)) {
-                    console.log("added subgroup: " + groupName);
                     if (typeof groupData == 'object' && groupData != null) {
                         details_html += `<details id='details-group'><summary><i class="material-icons" id="book-icon">library_books</i>${groupName}</summary><br><div id="${group}-${groupName}" style="overflow-y: scroll; max-height: 300px;"></div></details>`;
                     }
@@ -601,7 +612,6 @@ function loadAllSongs() {
                     continue;
                 }
                 var details_arrangement = document.getElementById(group);
-                console.log(details_arrangement, group);
                 let details_arrangements_html = ""
                 for (const [groupName, groupData] of Object.entries(files)) {
                     if (typeof groupData === 'object' && groupData !== null) {
@@ -609,7 +619,7 @@ function loadAllSongs() {
                         let details_group_html = "";
                         for (const [fileName, fileData] of Object.entries(groupData)) {
                             var safeFileName = fileName.replace("\'", "\\'")
-                            if (navigator.onLine) {
+                            if (navigator.onLine && canEdit(group)) {
                                 details_group_html += `<ul style="display: inline-flex; margin: 0 15px 0 0" id="custonContentLayout">
                                                 <a class="waves-effect waves-light btn song" onclick="loadFileCustomContentFromGroup('${group}', '${groupName}', '${safeFileName}')">${fileName}</a>
                                                 <li><a class="btn-floating aqua" onclick="editTextFromGroup('${group}', '${groupName}', '${fileName}')"><i class="material-icons">mode_edit</i></a></li>
@@ -618,7 +628,7 @@ function loadAllSongs() {
                                 details_group_html += `<a class="waves-effect waves-light btn song" onclick="loadFileCustomContentFromGroup('${group}', '${groupName}', '${safeFileName}')">${fileName}</a>`;
                             }
                         }
-                        if (navigator.onLine) {
+                        if (navigator.onLine && canEdit(group)) {
                             details_group_html += `<div class="fixed-action-btn horizontal tool-bar click-to-toggle" id="addCustomContentButton">
                                             <a class="btn-floating btn-large aqua"><i class="large material-icons">more_horiz</i></a>
                                             <ul>
@@ -632,7 +642,7 @@ function loadAllSongs() {
                         details_group.innerHTML = details_group_html;
                     } else {
                         var safeFileName = groupName.replace("\'", "\\'")
-                        if (navigator.onLine) {
+                        if (navigator.onLine && canEdit(group)) {
                             details_arrangements_html += `<ul style="display: inline-flex; margin: 0 15px 0 0" id="custonContentLayout">
                                             <a class="waves-effect waves-light btn song" onclick="loadFileCustomContent('${group}', '${safeFileName}')">${groupName}</a>
                                             <li><a class="btn-floating  aqua" onclick="editTextFromArrangement('${group}', '${groupName}')"><i class="material-icons">mode_edit</i></a></li>
@@ -642,7 +652,7 @@ function loadAllSongs() {
                         }
                     }
                 }
-                if (navigator.onLine) {
+                if (navigator.onLine && canEdit(group)) {
                     details_arrangements_html += `<div class="fixed-action-btn horizontal tool-bar click-to-toggle" id="addCustomContentButton">
                                     <a class="btn-floating btn-large aqua"><i class="large material-icons">more_horiz</i></a>
                                     <ul>
@@ -653,6 +663,14 @@ function loadAllSongs() {
                                         <li><a class="btn-floating aqua" onclick="openForm('editArrangement', '${group}', '')"><i class="material-icons">mode_edit</i></a></li>
                                     </ul>
         
+                                </div>`
+                }
+                if (navigator.onLine && !canEdit(group)){
+                    details_arrangements_html += `<div class="fixed-action-btn horizontal tool-bar click-to-toggle" id="addCustomContentButton">
+                                    <a class="btn-floating btn-large aqua"><i class="large material-icons">more_horiz</i></a>
+                                    <ul>
+                                        <li><a class="btn-floating aqua" onclick="enterPassword('${group}')"><i class="material-icons">lock_open</i></a></li>
+                                    </ul>
                                 </div>`
                 }
                 details_arrangement.innerHTML = details_arrangements_html;
@@ -678,7 +696,6 @@ function filterSongs() {
     }
     var homePage = $("#homePage");
     var originalSongButtons = $(".waves-effect.waves-light.btn.song");
-    var noTextMessage = document.getElementById('noTextMessage')
 
     if (searchText != "") {
         if ($('#searchCheckbox').prop('checked')) {
@@ -703,7 +720,7 @@ function filterSongs() {
                     var filteredFiles = originalSongButtons.filter(function () {
                         var buttonText = $(this).text().toLowerCase().trim();
                         for (var song of songs) {
-                            if (song.toLowerCase() === buttonText) {
+                            if (song.toLowerCase() == buttonText) {
                                 return true;
                             }
                         }
@@ -713,7 +730,7 @@ function filterSongs() {
                     originalDetails.each(function () {
                         var details = $(this);
                         var detailFilteredElements = details.find(".waves-effect.waves-light.btn").filter(function () {
-                            return $(this).css("display") === "inline-block";
+                            return $(this).css("display") == "inline-block";
                         });
                         if (detailFilteredElements.length > 0) {
                             details.show();
@@ -721,11 +738,10 @@ function filterSongs() {
                             details.hide();
                         }
                     });
-                    var visibleBooks = homePage.find('details:visible').length;
-                    if (visibleBooks === 0) {
-                        noTextMessage.innerHTML = "<br>No songs found with this name"
+                    if (homePage.find('details:visible').length === 0) {
+                        $('#noTextMessage').html("<br>No songs found with this name");
                     } else {
-                        noTextMessage.innerHTML = ""
+                        $('#noTextMessage').html("");
                     }
                     stopLoading();
                 }).catch(err => {
@@ -750,11 +766,10 @@ function filterSongs() {
                     details.hide();
                 }
             });
-            var visibleBooks = homePage.find('details:visible').length;
-            if (visibleBooks == 0) {
-                noTextMessage.innerHTML = "<br>No songs found with this name"
+            if (homePage.find('details:visible').length == 0) {
+                $('#noTextMessage').html("<br>No songs found with this name");
             } else {
-                noTextMessage.innerHTML = ""
+                $('#noTextMessage').html("");
             }
             stopLoading();
         }
@@ -813,7 +828,6 @@ function addCode(event) {
             }
         })
         .then(data => {
-            console.log(data);
             setTimeout(function () {
                 closeAddExistingCodeForm();
             }, 300);
@@ -827,12 +841,41 @@ function addCode(event) {
         });
 }
 
+function enterPassword(group_name){
+    let password = prompt("Please enter password", "");
+    if (password !== null){
+        const apiUrl = `http://10.11.2.76:5000/check_password/${group_name}/${password}`;
+        fetch(apiUrl)
+        .then(response => {
+            if (response.ok) {
+                return response.json(); // Parse the JSON response
+            } else {
+                throw new Error('Network response was not ok.');
+            }
+        })
+        .then(data => {
+            if (data.correct) {
+                Materialize.toast('Success!', 3000);
+                loadAllArrangements();
+                loadAllSongs();
+            } else {
+                Materialize.toast('Incorrect Password!', 3000);
+            }
+        })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
+    }
+}
+
 function createLibrary(event) {
     event.preventDefault();
     var codeName = document.getElementById('code_name').value;
     var folderName = document.getElementById('folder_name').value;
     var private = document.getElementById('privateCheckbox').checked;
-    const apiUrl = `http://10.11.2.76:5000/create_code/${codeName}/${folderName}/${private}`;
+    var public_edits = document.getElementById('publicEditCheckbox').checked;
+    var password = document.getElementById('edit_password').value;
+    const apiUrl = `http://10.11.2.76:5000/create_code/${codeName}/${folderName}/${private}/${public_edits}/${password}`;
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
@@ -840,7 +883,6 @@ function createLibrary(event) {
             }
         })
         .then(data => {
-            console.log(data);
             setTimeout(function () {
                 closeCreateCodeForm();
             }, 300);
@@ -910,7 +952,6 @@ function openAddExistingCodeForm() {
     void addExistingCodeForm.offsetWidth;
     addExistingCodeForm.style.transform = "translate(-50%, -50%)";
     addExistingCodeForm.style.opacity = 1;
-
     $('#code-options').click();
 }
 
@@ -964,7 +1005,6 @@ function loadFileContentFromGroup(book, group, song_name, reloadNavBar = true) {
         if (reloadNavBar) {
             $('#navbarSearch').val("");
             document.getElementById('navbarArrangementName').innerText = book;
-            var navbarSongsList = document.getElementById('navbarSongsList');
             var html = ""
             for (const [sub_group, files] of Object.entries(data[book])) {
                 html += `<li class="collection-header"><h4>${sub_group}</h4></li>`
@@ -973,7 +1013,7 @@ function loadFileContentFromGroup(book, group, song_name, reloadNavBar = true) {
                     html += `<li><a class="collection-item" onclick="loadFileContentFromGroup('${book}', '${sub_group}', '${safeFileName}', false)">${songName}</a></li>`;
                 }
             }
-            navbarSongsList.innerHTML = html;
+            $('#navbarSongsList').html(html);
         }
         var navbarSongsList = $("#navbarSongsList");
         var filteredElements = navbarSongsList.find(".collection-item").filter(function () {
@@ -1022,13 +1062,12 @@ function loadFileContent(book, song_name, reloadNavBar = true) {
         if (reloadNavBar) {
             $('#navbarSearch').val("");
             document.getElementById('navbarArrangementName').innerText = book;
-            var navbarSongsList = document.getElementById('navbarSongsList');
             var html = ""
             for (const [song, files] of Object.entries(data[book])) {
                 var safeFileName = song.replace("\'", "\\'")
                 html += `<li><a href="#!" class="collection-item" onclick="loadFileContent('${book}', '${safeFileName}', false)">${song}</a></li>`;
             }
-            navbarSongsList.innerHTML = html;
+            $('#navbarSongsList').html(html);
         }
         var navbarSongsList = $("#navbarSongsList");
         var filteredElements = navbarSongsList.find(".collection-item").filter(function () {
@@ -1077,7 +1116,6 @@ function loadFileCustomContent(book, song_name, reloadNavBar = true) {
         if (reloadNavBar) {
             $('#navbarSearch').val("");
             document.getElementById('navbarArrangementName').innerText = book;
-            var navbarSongsList = document.getElementById('navbarSongsList');
             var html = ""
             for (const [song, files] of Object.entries(data[book])) {
                 var safeFileName = song.replace("\'", "\\'")
@@ -1088,7 +1126,7 @@ function loadFileCustomContent(book, song_name, reloadNavBar = true) {
                     html += `<li class="collection-header"><h4>${song}</h4></li>`
                 }
             }
-            navbarSongsList.innerHTML = html;
+            $('#navbarSongsList').html(song_name);
         }
         var navbarSongsList = $("#navbarSongsList");
         var filteredElements = navbarSongsList.find(".collection-item").filter(function () {
@@ -1137,7 +1175,6 @@ function loadFileCustomContentFromGroup(book, group, song_name, reloadNavBar = t
         if (reloadNavBar) {
             $('#navbarSearch').val("");
             document.getElementById('navbarArrangementName').innerText = book;
-            var navbarSongsList = document.getElementById('navbarSongsList');
             var html = ""
             for (const [sub_group, files] of Object.entries(data[book])) {
                 html += `<li class="collection-header"><h4>${sub_group}</h4></li>`
@@ -1150,7 +1187,7 @@ function loadFileCustomContentFromGroup(book, group, song_name, reloadNavBar = t
                     }
                 }
             }
-            navbarSongsList.innerHTML = html;
+            $("#navbarSongsList").html(html);
         }
         var navbarSongsList = $("#navbarSongsList");
         var filteredElements = navbarSongsList.find(".collection-item").filter(function () {
