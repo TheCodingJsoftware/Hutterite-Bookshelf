@@ -1,17 +1,15 @@
 import os
+import sys
+
+import docx2txt
 import ujson as json
 from flask import (
     Flask,
-    render_template,
-)
-import docx2txt
-from flask import (
-    Flask,
+    jsonify,
+    make_response,
     render_template,
     request,
-    make_response,
     send_from_directory,
-    jsonify,
 )
 from werkzeug.datastructures import ImmutableMultiDict
 
@@ -347,5 +345,6 @@ def parse_string_to_dict(string: str) -> dict:
 
 
 # threading.Thread(target=downloadThread).start()
-# app.run()
-app.run(host="10.0.0.217", port=5000)
+if sys.platform == "win32":
+    app.run()
+# app.run(host="10.0.0.217", port=5000)
