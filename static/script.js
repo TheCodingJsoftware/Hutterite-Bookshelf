@@ -127,7 +127,7 @@ async function groupUploadFIles(group, groupName) {
                 formData.append('files', file);
             });
 
-            const response = await fetch('http://10.11.2.76:5000/upload', {
+            const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData,
             });
@@ -148,7 +148,7 @@ async function groupUploadFIles(group, groupName) {
 
 function renameGroup(arrangement, oldGroupName) {
     var newGroupName = document.getElementById('new_group_name').value;
-    const apiUrl = `http://10.11.2.76:5000/rename_group/${arrangement}/${oldGroupName}/${newGroupName}`;
+    const apiUrl = `/rename_group/${arrangement}/${oldGroupName}/${newGroupName}`;
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
@@ -175,7 +175,7 @@ function renameArrangement(oldArrangementName, oldCodeName) {
     var newPrivate = document.getElementById('new_privateCheckbox').checked;
     var newPublicEdit = document.getElementById('new_publicEditCheckbox').checked;
     var newPassword = document.getElementById('new_edit_password').value;
-    const apiUrl = `http://10.11.2.76:5000/rename_arrangement/${oldArrangementName}/${newName}/${oldCodeName}/${newCode}/${newPrivate}/${newPublicEdit}/${newPassword}`;
+    const apiUrl = `/rename_arrangement/${oldArrangementName}/${newName}/${oldCodeName}/${newCode}/${newPrivate}/${newPublicEdit}/${newPassword}`;
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
@@ -198,7 +198,7 @@ function renameArrangement(oldArrangementName, oldCodeName) {
 }
 
 function deleteGroup(arrangement, groupName) {
-    const apiUrl = `http://10.11.2.76:5000/delete_group/${arrangement}/${groupName}`;
+    const apiUrl = `/delete_group/${arrangement}/${groupName}`;
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
@@ -220,7 +220,7 @@ function deleteGroup(arrangement, groupName) {
 }
 
 function deleteArrangement(arrangement, codeName) {
-    const apiUrl = `http://10.11.2.76:5000/delete_arrangement/${arrangement}/${codeName}`;
+    const apiUrl = `/delete_arrangement/${arrangement}/${codeName}`;
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {
@@ -271,7 +271,7 @@ function editTextFromArrangement(arrangement, oldSongName) {
         Form.style.display = "block";
         void Form.offsetWidth;
         Form.style.opacity = 1;
-        
+
         $('#new_song_name').val(oldSongName)
         $('#submitEditSong').removeAttr("onclick");
         $('#submitEditSong').attr('onclick',`submitEditSong('${arrangement}', '', '${oldSongName}')`);
@@ -414,7 +414,7 @@ async function arrangementUploadFiles(arrangement) {
                 formData.append('files', file);
             });
 
-            const response = await fetch('http://10.11.2.76:5000/upload', {
+            const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData,
             });
@@ -433,28 +433,24 @@ async function arrangementUploadFiles(arrangement) {
     }
 }
 
-function arrangementCreateGroup(arrangement) {
+async function arrangementCreateGroup(arrangement) {
     var groupName = document.getElementById('group_name').value;
     if (groupName != "null" && groupName != "") {
-        const apiUrl = `http://10.11.2.76:5000/create_group/${arrangement}/${groupName}`;
-        fetch(apiUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-            })
-            .then(data => {
-                Materialize.toast('Success!', 3000);
-                setTimeout(function () {
-                    closeForm("createGroup");
-                }, 300);
-                loadAllArrangements();
-                loadAllSongs();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                Materialize.toast(error, 6000)
-            });
+        const formData = new FormData();
+        formData.append('arrangement', arrangement);
+        formData.append('group', groupName);
+
+        const response = await fetch('/create_group', {
+            method: 'POST',
+            body: formData,
+        });
+        if (response.ok) {
+            Materialize.toast('Successfully created group!', 3000);
+            loadAllArrangements();
+            loadAllSongs();
+        } else {
+            Materialize.toast('Failed to create group!', 6000);
+        }
     }
 }
 
@@ -662,7 +658,7 @@ function loadAllSongs() {
                                         <li><a class="btn-floating aqua" onclick="openForm('createGroup', '${group}', '')"><i class="material-icons">create_new_folder</i></a></li>
                                         <li><a class="btn-floating aqua" onclick="openForm('editArrangement', '${group}', '')"><i class="material-icons">mode_edit</i></a></li>
                                     </ul>
-        
+
                                 </div>`
                 }
                 if (navigator.onLine && !canEdit(group)){
@@ -811,7 +807,7 @@ $(document).on("input", "#navbarSearch", function () {
     }
 });
 
-function addCode(event) {
+async function addCode(event) {
     event.preventDefault();
     var codeName = document.getElementById('codeSelection');
     var selectedItems = [];
@@ -820,31 +816,25 @@ function addCode(event) {
             selectedItems.push(codeName.options[i].value);
         }
     }
-    const apiUrl = `http://10.11.2.76:5000/add_code/${selectedItems}`;
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-        })
-        .then(data => {
-            setTimeout(function () {
-                closeAddExistingCodeForm();
-            }, 300);
-            Materialize.toast('Success!', 3000);
-            loadAllArrangements();
-            loadAllSongs();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Materialize.toast(error, 6000)
-        });
+    const formData = new FormData();
+    formData.append('codes', selectedItems);
+    const response = await fetch('/add_code', {
+        method: 'POST',
+        body: formData,
+    });
+    if (response.ok) {
+        Materialize.toast('Successfully added codes!', 3000);
+        loadAllArrangements();
+        loadAllSongs();
+    } else {
+        Materialize.toast('Failed to add codes!', 6000);
+    }
 }
 
 function enterPassword(group_name){
     let password = prompt("Please enter password", "");
     if (password !== null){
-        const apiUrl = `http://10.11.2.76:5000/check_password/${group_name}/${password}`;
+        const apiUrl = `/check_password/${group_name}/${password}`;
         fetch(apiUrl)
         .then(response => {
             if (response.ok) {
@@ -875,7 +865,7 @@ function createLibrary(event) {
     var private = document.getElementById('privateCheckbox').checked;
     var public_edits = document.getElementById('publicEditCheckbox').checked;
     var password = document.getElementById('edit_password').value;
-    const apiUrl = `http://10.11.2.76:5000/create_code/${codeName}/${folderName}/${private}/${public_edits}/${password}`;
+    const apiUrl = `/create_code/${codeName}/${folderName}/${private}/${public_edits}/${password}`;
     fetch(apiUrl)
         .then(response => {
             if (!response.ok) {

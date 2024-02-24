@@ -1,17 +1,13 @@
-import json
 import os
 import ujson as json
-from urllib.parse import unquote
 from flask import (
     Flask,
     render_template,
 )
 import docx2txt
-from natsort import natsorted
 from flask import (
     Flask,
     render_template,
-    send_file,
     request,
     make_response,
     send_from_directory,
@@ -20,8 +16,6 @@ from flask import (
 from werkzeug.datastructures import ImmutableMultiDict
 
 app = Flask(__name__)
-
-from rich import print
 
 
 @app.route("/")
@@ -61,17 +55,16 @@ def upload():
     return jsonify({"success": True})
 
 
-@app.route("/create_group/<arrangement_name>/<group_name>")
-def create_group(
-    arrangement_name, group_name
-):  # Add the book arrangement to the database
+@app.route("/create_group", methods=["POST"])
+def create_group():
+    arrangement_name = request.form["arrangement"]
+    group_name = request.form["group"]
     with open("static/custom_content.json", "r", encoding="utf-8") as f:
         custom_content = json.load(f)
     custom_content[arrangement_name].setdefault(group_name, {})
     with open("static/custom_content.json", "w", encoding="utf-8") as f:
         json.dump(custom_content, f, indent=4)
-    response = make_response()
-    return response
+    return jsonify({"success": True})
 
 
 @app.route("/rename_group/<arrangement_name>/<old_group_name>/<new_group_name>")
@@ -85,8 +78,7 @@ def rename_group(
     del custom_content[arrangement_name][old_group_name]
     with open("static/custom_content.json", "w", encoding="utf-8") as f:
         json.dump(custom_content, f, indent=4)
-    response = make_response()
-    return response
+    return make_response()
 
 
 @app.route("/delete_group/<arrangement_name>/<group_name>")
@@ -98,8 +90,7 @@ def delete_group(
     del custom_content[arrangement_name][group_name]
     with open("static/custom_content.json", "w", encoding="utf-8") as f:
         json.dump(custom_content, f, indent=4)
-    response = make_response()
-    return response
+    return make_response()
 
 
 @app.route(
@@ -167,11 +158,12 @@ def check_password(arrangement_name, entered_password):
     return jsonify({"correct": False})
 
 
-@app.route("/add_code/<codes>")
-def add_code(codes):
+@app.route("/add_code", methods=["POST"])
+def add_code():
     with open("static/codes.json", "r", encoding="utf-8") as f:
         all_codes = json.load(f)
     response = make_response()
+    codes = request.form["codes"]
     for code in codes.split(","):
         response.set_cookie(
             code,
@@ -200,8 +192,8 @@ def create_code(code, folder_name, private, public_edits, password):
 
 
 def save_code(code, folder_name, private, public_edits, password):
-    private = True if private == "true" else False
-    public_is_allowed_to_edit = True if public_edits == "true" else False
+    private = private == "true"
+    public_is_allowed_to_edit = public_edits == "true"
     with open("static/codes.json", "r", encoding="utf-8") as f:
         codes_data = json.load(f)
 
@@ -247,13 +239,12 @@ def edit_song():
             custom_content[arrangement][newSongName] = songContent
         else:
             custom_content[arrangement][groupName][newSongName] = songContent
+    elif groupName == "":
+        custom_content[arrangement][newSongName] = songContent
+        del custom_content[arrangement][oldSongName]
     else:
-        if groupName == "":
-            custom_content[arrangement][newSongName] = songContent
-            del custom_content[arrangement][oldSongName]
-        else:
-            custom_content[arrangement][groupName][newSongName] = songContent
-            del custom_content[arrangement][groupName][oldSongName]
+        custom_content[arrangement][groupName][newSongName] = songContent
+        del custom_content[arrangement][groupName][oldSongName]
 
     with open("static/custom_content.json", "w", encoding="utf-8") as f:
         json.dump(custom_content, f, indent=4)
@@ -357,4 +348,4 @@ def parse_string_to_dict(string: str) -> dict:
 
 # threading.Thread(target=downloadThread).start()
 # app.run()
-app.run(host="10.11.2.76", port=5000)
+app.run(host="10.0.0.217", port=5000)
