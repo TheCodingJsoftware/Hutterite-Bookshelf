@@ -55,19 +55,24 @@ function codeIsInCookies(other_code) {
 }
 
 function canEdit(other_code){
-    var cookie_codes = document.cookie.split('; ');
-    for (var cookie_code of cookie_codes) {
-        if (cookie_code == '') {
-            return false;
+        var cookie_codes = document.cookie.split('; ');
+        for (let index = 0; index < cookie_codes.length; index++) {
+            var cookie_code1 = cookie_codes[index];
+            if (cookie_code1 == '') {
+                continue;
+            }
+            cookie_code1 = cookie_code1.replace("\\073", ";").replace("\"", "");
+            var code = cookie_code1.split('=')[0];
+            try {
+                var canEdit = cookie_code1.split('edit=')[1].replace("\"", "");
+            } catch (e) {
+               continue;
+            }
+            var folder_name = cookie_code1.split('=')[1].replace(/"/g, '').split(';')[0];
+            if (other_code == code || other_code == folder_name) {
+                return canEdit == "True"
+            }
         }
-        cookie_code = cookie_code.replace("\\073", ";").replace("\"", "");
-        var code = cookie_code.split('=')[0];
-        var canEdit = cookie_code.split('edit=')[1].replace("\"", "");
-        var folder_name = cookie_code.split('=')[1].replace(/"/g, '').split(';')[0];
-        if (other_code == code || other_code == folder_name) {
-            return canEdit == "True"
-        }
-    }
     return false;
 }
 
