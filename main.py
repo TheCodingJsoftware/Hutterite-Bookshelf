@@ -34,6 +34,7 @@ def upload():
     arrangement_name = request.form["arrangement"]
     group_name = request.form["group"]
     files = request.files.getlist("files")
+
     for file in files:
         filename: str = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
         file.save(filename)
@@ -45,11 +46,13 @@ def upload():
         elif filename.lower().endswith(".txt"):
             with open(filename, "r") as txt_file:
                 content = txt_file.read()
+
         if group_name == "":
             add_song(arrangement_name, song_name, content)
         else:
             add_song_to_group(arrangement_name, group_name, song_name, content)
         os.remove(filename)
+
     return jsonify({"success": True})
 
 
@@ -57,61 +60,76 @@ def upload():
 def create_group():
     arrangement_name = request.form["arrangement"]
     group_name = request.form["group"]
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
+
     custom_content[arrangement_name].setdefault(group_name, {})
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
+
     return jsonify({"success": True})
 
 
-@app.route("/rename_group/<arrangement_name>/<old_group_name>/<new_group_name>")
-def rename_group(
-    arrangement_name, old_group_name, new_group_name
-):  # Add the book arrangement to the database
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+@app.route("/rename_group", methods=["POST"])
+def rename_group():
+    arrangement_name = request.form["arrangement"]
+    old_group_name = request.form["group_name"]
+    new_group_name= request.form["new_group_name"]
+
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
+
     group_copy = custom_content[arrangement_name][old_group_name]
     custom_content[arrangement_name].setdefault(new_group_name, group_copy)
     del custom_content[arrangement_name][old_group_name]
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
-    return make_response()
+
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
+
+    return jsonify({"success": True})
 
 
-@app.route("/delete_group/<arrangement_name>/<group_name>")
-def delete_group(
-    arrangement_name, group_name
-):  # Add the book arrangement to the database
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+@app.route("/delete_group", methods=["POST"])
+def delete_group():
+    arrangement_name = request.form["arrangement_name, group_name"]
+    group_name = request.form["group"]
+
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
+
     del custom_content[arrangement_name][group_name]
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
+
     return make_response()
 
 
-@app.route(
-    "/rename_arrangement/<old_arrangement_name>/<new_arrangement_name>/<old_code_name>/<new_code_name>/<private>/<public_edits>/<password>"
-)
-def rename_arrangment(
-    old_arrangement_name,
-    new_arrangement_name,
-    old_code_name,
-    new_code_name,
-    private,
-    public_edits,
-    password,
-):
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+@app.route("/rename_arrangement", methods=["POST"])
+def rename_arrangment():
+    old_arrangement_name = request.form["arrangement_name"]
+    new_arrangement_name = request.form["new_folder_name"]
+    old_code_name = request.form["code_name"]
+    new_code_name = request.form["new_code_name"]
+    private = request.form["new_privateCheckbox"]
+    public_edits = request.form["new_publicEditCheckbox"]
+    password = request.form["new_edit_password"]
+
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
+
     data_copy = custom_content[old_arrangement_name]
     del custom_content[old_arrangement_name]
     custom_content.setdefault(new_arrangement_name, data_copy)
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
+
     delete_code(old_code_name)
     save_code(new_code_name, new_arrangement_name, private, public_edits, password)
+
     response = make_response()
     response.delete_cookie(old_code_name)
     response.set_cookie(
@@ -119,26 +137,28 @@ def rename_arrangment(
         f"{new_arrangement_name};edit=True",
         max_age=10 * 365 * 24 * 60 * 60,
     )  # 10 years in seconds
+
     return response
 
 
-@app.route("/delete_arrangement/<arrangement_name>/<code_name>")
-def delete_arrangement(arrangement_name, code_name):
-    # with open('static/custom_content.json', 'r', encoding='utf-8') as f:
-    #     custom_content = json.load(f)
-    # del custom_content[arrangement_name]
-    # with open('static/custom_content.json', 'w', encoding='utf-8') as f:
-    #     json.dump(custom_content, f, indent=4)
+@app.route("/delete_arrangement", methods=["POST"])
+def delete_arrangement():
+    arrangement_name = request.form["arrangement"]
+    code_name = request.form["code_name"]
+
     delete_code(code_name)
     response = make_response()
     response.delete_cookie(code_name)
+
     return response
 
 
-@app.route("/check_password/<arrangement_name>/<entered_password>")
-def check_password(arrangement_name, entered_password):
-    with open("static/codes.json", "r", encoding="utf-8") as f:
-        all_codes = json.load(f)
+@app.route("/check_password", methods=["POST"])
+def check_password():
+    arrangement_name = request.form["group_name"]
+    entered_password = request.form["password"]
+    with open("static/codes.json", "r", encoding="utf-8") as file:
+        all_codes = json.load(file)
 
     for code, code_data in all_codes.items():
         if (
@@ -158,8 +178,8 @@ def check_password(arrangement_name, entered_password):
 
 @app.route("/add_code", methods=["POST"])
 def add_code():
-    with open("static/codes.json", "r", encoding="utf-8") as f:
-        all_codes = json.load(f)
+    with open("static/codes.json", "r", encoding="utf-8") as file:
+        all_codes = json.load(file)
     response = make_response()
     codes = request.form["codes"]
     for code in codes.split(","):
@@ -171,29 +191,37 @@ def add_code():
     return response
 
 
-@app.route("/create_code/<code>/<folder_name>/<private>/<public_edits>/<password>")
-def create_code(code, folder_name, private, public_edits, password):
+@app.route("/create_code", methods=["POST"])
+def create_code():
+    code = request.form["code_name"]
+    folder_name = request.form["folder_name"]
+    private = request.form["privateCheckbox"]
+    public_edits = request.form["publicEditCheckbox"]
+    password = request.form["edit_password"]
     save_code(code, folder_name, private, public_edits, password)
 
     # Add the book arrangement to the database
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
+
     custom_content.setdefault(folder_name, {})
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
 
     response = make_response()
     response.set_cookie(
         code, f"{folder_name};edit=True", max_age=10 * 365 * 24 * 60 * 60
     )  # 10 years in seconds
+
     return response
 
 
 def save_code(code, folder_name, private, public_edits, password):
     private = private == "true"
     public_is_allowed_to_edit = public_edits == "true"
-    with open("static/codes.json", "r", encoding="utf-8") as f:
-        codes_data = json.load(f)
+    with open("static/codes.json", "r", encoding="utf-8") as file:
+        codes_data = json.load(file)
 
     codes_data.setdefault(
         code,
@@ -205,18 +233,18 @@ def save_code(code, folder_name, private, public_edits, password):
         },
     )
 
-    with open("static/codes.json", "w", encoding="utf-8") as f:
-        json.dump(codes_data, f, indent=4)
+    with open("static/codes.json", "w", encoding="utf-8") as file:
+        json.dump(codes_data, file, indent=4)
 
 
 def delete_code(code):
-    with open("static/codes.json", "r", encoding="utf-8") as f:
-        codes_data = json.load(f)
+    with open("static/codes.json", "r", encoding="utf-8") as file:
+        codes_data = json.load(file)
 
     del codes_data[code]
 
-    with open("static/codes.json", "w", encoding="utf-8") as f:
-        json.dump(codes_data, f, indent=4)
+    with open("static/codes.json", "w", encoding="utf-8") as file:
+        json.dump(codes_data, file, indent=4)
 
 
 @app.route("/edit_song", methods=["POST"])
@@ -229,8 +257,8 @@ def edit_song():
     oldSongName = data.get("oldSongName")
     songContent = data.get("songContent")
 
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
 
     if newSongName == oldSongName:
         if groupName == "":
@@ -244,8 +272,8 @@ def edit_song():
         custom_content[arrangement][groupName][newSongName] = songContent
         del custom_content[arrangement][groupName][oldSongName]
 
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
 
     return jsonify({"message": "Edit successful"})
 
@@ -259,16 +287,16 @@ def add_new_song():
     songName = data.get("songName")
     songContent = data.get("songContent")
 
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
 
     if groupName == "":
         custom_content[arrangement][songName] = songContent
     else:
         custom_content[arrangement][groupName][songName] = songContent
 
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
 
     return jsonify({"message": "Edit successful"})
 
@@ -281,38 +309,38 @@ def delete_song():
     groupName = data.get("groupName")
     songName = data.get("songName")
 
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
 
     if groupName == "":
         del custom_content[arrangement][songName]
     else:
         del custom_content[arrangement][groupName][songName]
 
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
 
     return jsonify({"message": "Edit successful"})
 
 
 def add_song(arrangement_name, song_name, song_text):
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
 
     custom_content[arrangement_name].setdefault(song_name, song_text)
 
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
 
 
 def add_song_to_group(arrangement_name, group_name, song_name, song_text):
-    with open("static/custom_content.json", "r", encoding="utf-8") as f:
-        custom_content = json.load(f)
+    with open("static/custom_content.json", "r", encoding="utf-8") as file:
+        custom_content = json.load(file)
 
     custom_content[arrangement_name][group_name].setdefault(song_name, song_text)
 
-    with open("static/custom_content.json", "w", encoding="utf-8") as f:
-        json.dump(custom_content, f, indent=4)
+    with open("static/custom_content.json", "w", encoding="utf-8") as file:
+        json.dump(custom_content, file, indent=4)
 
 
 @app.route("/sw.js")
@@ -346,5 +374,5 @@ def parse_string_to_dict(string: str) -> dict:
 
 # threading.Thread(target=downloadThread).start()
 if sys.platform == "win32":
-    app.run()
-# app.run(host="10.0.0.217", port=5000)
+    # app.run()
+    app.run(host="10.0.0.217", port=5000)

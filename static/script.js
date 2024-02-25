@@ -55,24 +55,24 @@ function codeIsInCookies(other_code) {
 }
 
 function canEdit(other_code){
-        var cookie_codes = document.cookie.split('; ');
-        for (let index = 0; index < cookie_codes.length; index++) {
-            var cookie_code1 = cookie_codes[index];
-            if (cookie_code1 == '') {
-                continue;
-            }
-            cookie_code1 = cookie_code1.replace("\\073", ";").replace("\"", "");
-            var code = cookie_code1.split('=')[0];
-            try {
-                var canEdit = cookie_code1.split('edit=')[1].replace("\"", "");
-            } catch (e) {
-               continue;
-            }
-            var folder_name = cookie_code1.split('=')[1].replace(/"/g, '').split(';')[0];
-            if (other_code == code || other_code == folder_name) {
-                return canEdit == "True"
-            }
+    var cookie_codes = document.cookie.split('; ');
+    for (let index = 0; index < cookie_codes.length; index++) {
+        var cookie_code1 = cookie_codes[index];
+        if (cookie_code1 == '') {
+            continue;
         }
+        cookie_code1 = cookie_code1.replace("\\073", ";").replace("\"", "");
+        var code = cookie_code1.split('=')[0];
+        try {
+            var canEdit = cookie_code1.split('edit=')[1].replace("\"", "");
+        } catch (e) {
+            continue;
+        }
+        var folder_name = cookie_code1.split('=')[1].replace(/"/g, '').split(';')[0];
+        if (other_code == code || other_code == folder_name) {
+            return canEdit == "True"
+        }
+    }
     return false;
 }
 
@@ -117,7 +117,7 @@ function groupCreateFile(arrangement, groupName) {
 }
 
 function groupAddExistingSong(group, groupName) {
-    Materialize.toast("groupAddExistingSong", 3000)
+    Materialize.toast("TODO: groupAddExistingSong", 3000)
 }
 
 async function groupUploadFIles(group, groupName) {
@@ -138,8 +138,6 @@ async function groupUploadFIles(group, groupName) {
             });
 
             if (response.ok) {
-                // const result = await response.json();
-                Materialize.toast('Successfully uploaded files!', 3000)
                 loadAllSongs();
             } else {
                 console.error('Failed to upload files');
@@ -151,99 +149,93 @@ async function groupUploadFIles(group, groupName) {
     }
 }
 
-function renameGroup(arrangement, oldGroupName) {
+async function renameGroup(arrangement, oldGroupName) {
     var newGroupName = document.getElementById('new_group_name').value;
-    const apiUrl = `/rename_group/${arrangement}/${oldGroupName}/${newGroupName}`;
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-        })
-        .then(data => {
-            setTimeout(function () {
-                closeForm("editGroup");
-            }, 300);
-            Materialize.toast("Success", 3000)
-            loadAllArrangements();
-            loadAllSongs();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Materialize.toast(error, 6000)
-        });
+    const formData = new FormData();
+    formData.append('arrangement', arrangement);
+    formData.append('group_name', oldGroupName);
+    formData.append('new_group_name', newGroupName);
+
+    const response = await fetch('/rename_group', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (response.ok) {
+        loadAllArrangements();
+        loadAllSongs();
+    } else {
+        Materialize.toast('Failed to rename group!', 6000);
+    }
 }
 
-function renameArrangement(oldArrangementName, oldCodeName) {
-    var newName = document.getElementById('new_folder_name').value;
-    var newCode = document.getElementById('new_code_name').value;
-    var newPrivate = document.getElementById('new_privateCheckbox').checked;
-    var newPublicEdit = document.getElementById('new_publicEditCheckbox').checked;
-    var newPassword = document.getElementById('new_edit_password').value;
-    const apiUrl = `/rename_arrangement/${oldArrangementName}/${newName}/${oldCodeName}/${newCode}/${newPrivate}/${newPublicEdit}/${newPassword}`;
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-        })
-        .then(data => {
-            setTimeout(function () {
-                closeForm("editArrangement");
-            }, 300);
-            Materialize.toast("Success", 3000)
-            loadAllArrangements();
-            loadAllSongs();
-            populateCodeOptions();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Materialize.toast(error, 6000)
-        });
+async function renameArrangement(oldArrangementName, oldCodeName) {
+    const formData = new FormData();
+    formData.append('arrangement_name', oldArrangementName);
+    formData.append('new_folder_name', newName);
+    formData.append('code_name', oldCodeName);
+    formData.append('new_code_name', newCode);
+    formData.append('new_privateCheckbox', newPrivate);
+    formData.append('new_publicEditCheckbox', newPublicEdit);
+    formData.append('new_edit_password', newPassword);
+
+    const response = await fetch('/rename_arrangement', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (response.ok) {
+        setTimeout(function () {
+            closeForm("editArrangement");
+        }, 300);
+        loadAllArrangements();
+        loadAllSongs();
+        populateCodeOptions();
+    } else {
+        Materialize.toast('Failed to rename arrangement!', 6000);
+    }
 }
 
-function deleteGroup(arrangement, groupName) {
-    const apiUrl = `/delete_group/${arrangement}/${groupName}`;
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-        })
-        .then(data => {
-            setTimeout(function () {
-                closeForm("editGroup");
-            }, 300);
-            Materialize.toast("Success", 3000);
-            loadAllArrangements();
-            loadAllSongs();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Materialize.toast(error, 6000)
-        });
+async function deleteGroup(arrangement, groupName) {
+    const formData = new FormData();
+    formData.append('arrangement', arrangement);
+    formData.append('group', groupName);
+
+    const response = await fetch('/delete_group', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (response.ok) {
+        setTimeout(function () {
+            closeForm("editGroup");
+        }, 300);
+        loadAllArrangements();
+        loadAllSongs();
+    } else {
+        Materialize.toast('Failed to delete group!', 6000);
+    }
 }
 
-function deleteArrangement(arrangement, codeName) {
-    const apiUrl = `/delete_arrangement/${arrangement}/${codeName}`;
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-        })
-        .then(data => {
-            setTimeout(function () {
-                closeForm("editArrangement");
-            }, 300);
-            Materialize.toast("Success", 3000)
-            loadAllArrangements();
-            loadAllSongs();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Materialize.toast(error, 6000)
-        });
+async function deleteArrangement(arrangement, codeName) {
+    const formData = new FormData();
+    formData.append('arrangement', arrangement);
+    formData.append('code_name', codeName);
+
+    const response = await fetch('/delete_arrangement', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (response.ok) {
+        loadAllArrangements();
+        loadAllSongs();
+        setTimeout(function () {
+            closeForm("editArrangement");
+        }, 300);
+    } else {
+        Materialize.toast('Failed to delete arrangement!', 6000);
+    }
 }
 
 function arrangementCreateFile(arrangement) {
@@ -265,7 +257,7 @@ function arrangementCreateFile(arrangement) {
 }
 
 function arrangementAddExistingSongs(arrangement) {
-    Materialize.toast("arrangementAddExistingSongs", 3000)
+    Materialize.toast("TODO: arrangementAddExistingSongs", 3000)
 }
 
 function editTextFromArrangement(arrangement, oldSongName) {
@@ -330,7 +322,7 @@ function closeEditSongForm() {
     }, { once: true });
 }
 
-function submitEditSong(arrangement, groupName, oldSongName) {
+async function submitEditSong(arrangement, groupName, oldSongName) {
     const song_content = suneditor.getContents();
     const newSongName = document.getElementById("new_song_name").value;
     const data = {
@@ -341,7 +333,7 @@ function submitEditSong(arrangement, groupName, oldSongName) {
         songContent: song_content
     };
 
-    fetch('/edit_song', {
+    await fetch('/edit_song', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -357,7 +349,7 @@ function submitEditSong(arrangement, groupName, oldSongName) {
         });
 }
 
-function sumbitAddNewSong(arrangement, groupName) {
+async function sumbitAddNewSong(arrangement, groupName) {
     const song_content = suneditor.getContents();
     const songName = document.getElementById("new_song_name").value;
     const data = {
@@ -366,7 +358,7 @@ function sumbitAddNewSong(arrangement, groupName) {
         songName: songName,
         songContent: song_content
     };
-    fetch('/add_new_song', {
+    await fetch('/add_new_song', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -382,7 +374,7 @@ function sumbitAddNewSong(arrangement, groupName) {
         });
 }
 
-function deleteSong(arrangement, groupName, songName) {
+async function deleteSong(arrangement, groupName, songName) {
     const newSongName = document.getElementById("new_song_name").value;
     const data = {
         arrangement: arrangement,
@@ -390,7 +382,7 @@ function deleteSong(arrangement, groupName, songName) {
         songName: songName,
     };
 
-    fetch('/delete_song', {
+    await fetch('/delete_song', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -425,11 +417,8 @@ async function arrangementUploadFiles(arrangement) {
             });
 
             if (response.ok) {
-                // const result = await response.json();
-                Materialize.toast('Successfully uploaded files!', 3000)
                 loadAllSongs();
             } else {
-                console.error('Failed to upload files');
                 Materialize.toast('Failed to upload files!', 6000)
             }
         }
@@ -537,11 +526,11 @@ const openFileOrFiles = async (multiple = true) => {
     });
 };
 
-function loadAllArrangements() {
-    const fetchDataJson = fetch('./static/data.json').then(response => {
+async function loadAllArrangements() {
+    const fetchDataJson = await fetch('./static/data.json').then(response => {
         return response.json();
     });
-    const fetchCustomContentJson = fetch('./static/custom_content.json').then(response => {
+    const fetchCustomContentJson = await fetch('./static/custom_content.json').then(response => {
         return response.json();
     });
     Promise.all([fetchDataJson, fetchCustomContentJson])
@@ -579,12 +568,12 @@ function loadAllArrangements() {
         });
 }
 
-function loadAllSongs() {
+async function loadAllSongs() {
     startLoading();
-    const fetchDataJson = fetch('./static/data.json').then(response => {
+    const fetchDataJson = await fetch('./static/data.json').then(response => {
         return response.json();
     });
-    const fetchCustomContentJson = fetch('./static/custom_content.json').then(response => {
+    const fetchCustomContentJson = await fetch('./static/custom_content.json').then(response => {
         return response.json();
     });
     Promise.all([fetchDataJson, fetchCustomContentJson])
@@ -828,7 +817,9 @@ async function addCode(event) {
         body: formData,
     });
     if (response.ok) {
-        Materialize.toast('Successfully added codes!', 3000);
+        setTimeout(function () {
+            closeForm("addExistingCodeForm");
+        }, 300);
         loadAllArrangements();
         loadAllSongs();
     } else {
@@ -836,60 +827,63 @@ async function addCode(event) {
     }
 }
 
-function enterPassword(group_name){
+async function enterPassword(group_name){
     let password = prompt("Please enter password", "");
     if (password !== null){
-        const apiUrl = `/check_password/${group_name}/${password}`;
-        fetch(apiUrl)
-        .then(response => {
-            if (response.ok) {
-                return response.json(); // Parse the JSON response
-            } else {
-                throw new Error('Network response was not ok.');
-            }
-        })
-        .then(data => {
-            if (data.correct) {
-                Materialize.toast('Success!', 3000);
+        const formData = new FormData();
+        formData.append('group_name', group_name);
+        formData.append('password', password);
+
+        const response = await fetch('/check_password', {
+            method: 'POST',
+            body: formData,
+        });
+        if (response.ok) {
+            const result = await response.json(); // Parse the JSON response
+            if (result.correct) {
+                Materialize.toast('Correct!', 3000);
                 loadAllArrangements();
                 loadAllSongs();
             } else {
-                Materialize.toast('Incorrect Password!', 3000);
+                Materialize.toast('Incorrect!', 3000);
             }
-        })
-        .catch(error => {
-            console.error('There was a problem with the fetch operation:', error);
-        });
+        } else {
+            console.error('Server responded with an error.');
+            Materialize.toast('Server error!', 6000);
+        }
     }
 }
 
-function createLibrary(event) {
+async function createLibrary(event) {
     event.preventDefault();
     var codeName = document.getElementById('code_name').value;
     var folderName = document.getElementById('folder_name').value;
     var private = document.getElementById('privateCheckbox').checked;
     var public_edits = document.getElementById('publicEditCheckbox').checked;
     var password = document.getElementById('edit_password').value;
-    const apiUrl = `/create_code/${codeName}/${folderName}/${private}/${public_edits}/${password}`;
-    fetch(apiUrl)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-        })
-        .then(data => {
-            setTimeout(function () {
-                closeCreateCodeForm();
-            }, 300);
-            populateCodeOptions();
-            Materialize.toast('Success!', 3000)
-            loadAllArrangements();
-            loadAllSongs();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Materialize.toast(error, 6000)
-        });
+
+    const formData = new FormData();
+    formData.append('code_name', codeName);
+    formData.append('folder_name', folderName);
+    formData.append('privateCheckbox', private);
+    formData.append('publicEditCheckbox', public_edits);
+    formData.append('edit_password', password);
+
+    const response = await fetch('/create_code', {
+        method: 'POST',
+        body: formData,
+    });
+
+    if (response.ok) {
+        setTimeout(function () {
+            closeCreateCodeForm();
+        }, 300);
+        populateCodeOptions();
+        loadAllArrangements();
+        loadAllSongs();
+    } else {
+        Materialize.toast('Failed to create code!', 6000);
+    }
 }
 
 function openForm(formName, arrangement, groupName) {
@@ -989,8 +983,8 @@ function calculateColumnCount() {
     container.style.columnCount = columnCount;
 }
 
-function loadFileContentFromGroup(book, group, song_name, reloadNavBar = true) {
-    fetch('./static/data.json').then(response => {
+async function loadFileContentFromGroup(book, group, song_name, reloadNavBar = true) {
+    await fetch('./static/data.json').then(response => {
         return response.json();
     }).then(data => {
         var formattedContent = data[book][group][song_name].replace(/\n/g, '<br>');
@@ -1046,8 +1040,8 @@ function loadFileContentFromGroup(book, group, song_name, reloadNavBar = true) {
     })
 }
 
-function loadFileContent(book, song_name, reloadNavBar = true) {
-    fetch('./static/data.json').then(response => {
+async function loadFileContent(book, song_name, reloadNavBar = true) {
+    await fetch('./static/data.json').then(response => {
         return response.json();
     }).then(data => {
         var formattedContent = data[book][song_name].replace(/\n/g, '<br>');
@@ -1100,8 +1094,8 @@ function loadFileContent(book, song_name, reloadNavBar = true) {
     })
 }
 
-function loadFileCustomContent(book, song_name, reloadNavBar = true) {
-    fetch('./static/custom_content.json').then(response => {
+async function loadFileCustomContent(book, song_name, reloadNavBar = true) {
+    await fetch('./static/custom_content.json').then(response => {
         return response.json();
     }).then(data => {
         var formattedContent = data[book][song_name].replace(/\n/g, '<br>');
@@ -1159,8 +1153,8 @@ function loadFileCustomContent(book, song_name, reloadNavBar = true) {
     })
 }
 
-function loadFileCustomContentFromGroup(book, group, song_name, reloadNavBar = true) {
-    fetch('./static/custom_content.json').then(response => {
+async function loadFileCustomContentFromGroup(book, group, song_name, reloadNavBar = true) {
+    await fetch('./static/custom_content.json').then(response => {
         return response.json();
     }).then(data => {
         var formattedContent = data[book][group][song_name].replace(/\n/g, '<br>');
