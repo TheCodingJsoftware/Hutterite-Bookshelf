@@ -1,9 +1,10 @@
 # Hutterite Bookshelf
 
-A public archive of hutterian documents.
-To deploy your Flask application running in Docker on your Synology NAS and set it up with a custom domain name, follow these steps:
+Your own bookshelf of Hutterite songs.
 
 ## Setup
+
+To deploy your Flask application running in Docker on your Synology NAS and set it up with a custom domain name, follow these steps:
 
 ### 1. **Prepare Your Synology NAS**
 
