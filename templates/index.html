@@ -6,9 +6,10 @@
     <title>Hutterite Bookshelf</title>
     <meta charset="utf-8">
     <meta property="og:title" content="Hutterite Bookshelf" />
-    <meta property="og:url" content="http://audioarchives.hbni.net:5050/documents.html" />
+    <meta property="og:url" content="https://hutteritebookshef.hbni.net" />
     <meta property="og:image" content="/static/icon.png" />
-    <meta property="og:description" content="Your own bookshelf." />
+    <meta property="og:description" content="Your own bookshelf of Hutterite songs." />
+    <meta name="description" content="Your own bookshelf of Hutterite songs.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/static/favicon.png">
     <link rel="manifest" href="/static/manifest.json">
@@ -16,87 +17,20 @@
     <script src="/static/bootstrap.js"></script>
     <script src="/static/bootstrap-select.js"></script>
     <script type="module" src="/static/zero-md.min.js"></script>
+    <script src="/static/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="/static/materialize.min.js"></script>
+    <script src="/static/suneditor.min.js"></script>
     <link type="text/css" href="/static/css/bootstrap.css" rel="stylesheet" />
     <link type="text/css" href="/static/css/bootstrap-select.css" rel="stylesheet" />
     <link rel="stylesheet" href="/static/css/materialize.min.css">
     <link href="/static/css/suneditor.min.css" rel="stylesheet">
-    <script src="/static/suneditor.min.js"></script>
     <link href="/static/css/icon.css" rel="stylesheet">
     <link type="text/css" rel="stylesheet" href='/static/css/main.css' />
 </head>
 
 <body>
-    <div id="modal1" class="modal modal-fixed-footer">
-        <div class="modal-content">
-            <h4>Terms of Use</h4>
-            <section>
-                <p>Welcome to the Hutterite Bookshelf! A public archive of hutterian documents.</p>
-                <h5>1. Acceptance of Terms</h5>
-                <p>
-                    By using our website and services, you agree to follow these terms of
-                    use.
-                </p>
-                <h5>2. Description of Service</h5>
-                <p>
-                    The Hutterite Bookshelf service provides a platform for users to access, create, and share Christian
-                    songs, biblical
-                    texts, Hutterite documents, and related content. Users can create personalized arrangements,
-                    designate them as public or
-                    private, and share access codes with others.
-                </p>
-                <h5>3. User Responsibilities</h5>
-                <p>
-                    Users can create public or private arrangements, and anyone with the corresponding access code can
-                    modify, edit, or
-                    delete the content. It is the user's responsibility to exercise caution and refrain from including
-                    sensitive information,
-                    passwords, or inappropriate content in the arrangements.
-                </p>
-                <p>
-                    The admin has the authority to remove inappropriate or harmful content without prior notice.
-                </p>
-                <h5>4. Data Security</h5>
-                <p>
-                    The Service does not encrypt user data. Users are encouraged to be mindful of this when adding
-                    content.
-                    Daily backups are made, and information is logged to facilitate recovery in the event of accidental
-                    data loss.
-                </p>
-                <h5>5. Changes to Terms</h5>
-                <p>
-                    The Terms of Use may change over time. Users are responsible for regularly reviewing the terms.
-                </p>
-                <h5>6. Service Status</h5>
-                <p>
-                    The Service is provided for free.
-                </p>
-                <h5>7. User Feedback</h5>
-                <p>
-                    For any questions, comments, or concerns please email the owner of this service.
-                </p>
-                <h5>8. Limitation of Liability</h5>
-                <p>
-                    The admin does not accept responsibility for user-shared content or any losses incurred, as the
-                    service is provided
-                    "as is."
-                </p>
-                <h5>9. Privacy and Logging</h5>
-                <p>
-                    No user information, IP addresses, names, or tracking is conducted of any kind, except for content
-                    changes
-                    logged for data recovery
-                    purposes.
-                </p>
-                Last update: 2024-02-04
-            </section>
-        </div>
-        <div class="modal-footer">
-            <a class="modal-action modal-close waves-effect btn" id="disagreeButton" onclick="userAgree()"><i
-                    class="material-icons left">close</i>Close</a>
-            <a class="modal-action modal-close waves-effect btn" id="agreeButton" onclick="$('#modal1').hide()"><i
-                    class="material-icons left">check</i>Agree</a>
-        </div>
-    </div>
     <div id="homePage">
         <ul id="home-slide-out" class="side-nav">
             <li>
@@ -104,13 +38,12 @@
                     <div class="row">
                         <div class="row" style="margin-bottom: 0;">
                             <div class="col s9 push-s3">
-                                <h4 style="font-size: 22px; text-align: left; margin: 0; margin-top: 10px;">Hutterite
-                                    Bookshelf
-                                </h4>
-                                <p>Your own bookshelf.</p>
+                                <h4 style="font-size: 18px; text-align: left; margin: 0; margin-top: 10px;">Hutterite Bookshelf </h4>
+                                <p style="line-height: 15px; margin-top: 15px;">Your own bookshelf of Hutterite songs.</p>
                             </div>
                             <div class="col s1 pull-s10">
                                 <img class="circle" style="background-color: black;" src="/static/icon.png" alt="logo">
+                                <p style="margin: 0; height: 10px; margin-left: 10px;">v1.0.0</p>
                             </div>
                         </div>
                     </div>
@@ -119,13 +52,16 @@
             <li>
                 <div class="divider"></div>
             </li>
-            <li><a class="subheader">Developed by the TheCodingJ's</a></li>
-            <li><a onclick="$('#modal1').show();" style="cursor: pointer;"><i class="material-icons">description</i>Terms of Use Policy</a></li>
+            <li><a href="https://thecodingjsoftware.github.io" class="subheader">Developed by the TheCodingJ's</a></li>
+            <li><button id="createSingAlongButton" class="btn-flat"><i class="material-icons left" style="font-size: 36px;">add_circle_outline</i>Create Sing Along</button></li>
+            <li><button id="joinSingAlongButton" class="btn-flat"><i class="material-icons left" style="font-size: 36px;">link</i>Join Sing Along</button></li>
+            <li><button id="welcomeButton" class="btn-flat"><i class="material-icons left" style="font-size: 36px;">info_outline</i>Read Me</button></li>
+            <li><button id="installInstructionsButton" class="btn-flat"><i class="material-icons left" style="font-size: 36px;">help_outline</i>How to Install</button></li>
+            <li><button id="singAlongInstructionsButton" class="btn-flat"><i class="material-icons left" style="font-size: 36px;">help_outline</i>What is Sing-Along</button></li>
+            <li><button id="updateButton" class="btn-flat"><i class="material-icons left" style="font-size: 36px;">update</i>Update</button></li>
             <footer class="page-footer">
                 <div class="container" style="padding: 0;">
-                    <p class="grey-text text-lighten-4" style="line-height: 15px;">For questions, comments, or
-                        concerns about this serivce please email:<a
-                            href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a></p>
+                    <p class="grey-text text-lighten-4" style="line-height: 15px;">For questions, comments, or concerns about this serivce please email: <a href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a></p>
                 </div>
                 <div class="footer-copyright">
                     <div class="container" style="padding: 0;">
@@ -136,12 +72,13 @@
         </ul>
         <nav>
             <div class="nav-wrapper">
-                <a class="brand-logo center" style="font-size: 20px;">Hutterite Bookshelf</a>
                 <ul id="nav-mobile" class="left">
-                    <li><a data-activates="home-slide-out"
-                            class="waves-effect waves-light btn-flat home-button-collapse" style="padding: 0;"><i
-                                class="material-icons" style="font-size: 36px;">menu</i></a></li>
+                <li>
+                    <a data-activates="home-slide-out"
+                    class="btn-flat home-button-collapse" style="text-decoration: none; padding: 0;"><i
+                    class="material-icons">menu</i></a></li>
                 </ul>
+                <div class="home-page-title">Hutterite Bookshelf</div>
             </div>
         </nav>
         <br>
@@ -150,14 +87,15 @@
             <div>
                 <div class="search-box">
                     <form class="search-form">
-                        <input type="text" placeholder="Search for songs" id="search" autocomplete="off">
+                        <input type="text" placeholder="Search in all categories" id="search" autocomplete="off">
+                        <button type="button" id="clear-search" style="display: none;">&times;</button>
                     </form>
                 </div>
-                <input type="checkbox" class="filled-in" id="searchCheckbox" />
-                <label for="searchCheckbox">Search body</label>
-                <div style="text-align: center; ">
-                    <div class="preloader-wrapper big active" id="loader">
-                        <div class="spinner-layer spinner-aqua-only">
+                <input type="checkbox" class="filled-in btn deep-purple lighten-1" id="searchCheckbox" />
+                <label for="searchCheckbox">Search song contents</label>
+                <div style="text-align: center;" id="loader">
+                    <div class="preloader-wrapper big active">
+                        <div class="spinner-layer">
                             <div class="circle-clipper left">
                                 <div class="circle"></div>
                             </div>
@@ -173,217 +111,227 @@
             </div>
         </div>
         <div id="noTextMessage"></div>
-        <div class="files-list" id="filesListContainer"></div>
-        <div class="form-popup" id="createCodeForm">
-            <form class="form-container">
-                <h4>Create Book Arrangement</h4>
-                <div class="row">
-                    <div class="input-field col s6">
-                        <input placeholder="Book name" id="folder_name" type="text" class="validate" required>
-                        <label for="folder_name">Arrangement Name</label>
-                        <p style="font-style: italic; font-size: 12px; color: gray;">The name that will appear in the
-                            app.</p>
-                    </div>
-                    <div class="input-field col s6">
-                        <input placeholder="Code name" id="code_name" type="text" class="validate" required>
-                        <label for="code_name">Code Name</label>
-                        <p style="font-style: italic; font-size: 12px; color: gray;">The code to access your content.
-                        </p>
-                    </div>
-                </div>
-                <input type="checkbox" class="filled-in" id="privateCheckbox" checked="checked" />
-                <label for="privateCheckbox">Do you want to keep this private</label>
-                <input type="checkbox" class="filled-in" id="publicEditCheckbox" />
-                <label for="publicEditCheckbox">Allow the public to make edits</label>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <input placeholder="Password" id="edit_password" type="text" class="validate" required>
-                        <label for="edit_password">Password</label>
-                        <p style="font-style: italic; font-size: 12px; color: gray;">Password to gain access to edit
-                            files.</p>
-                    </div>
-                </div>
-                <a type="submit" class="waves-effect waves-light btn" onclick="createLibrary(event)">Submit
-                    <i class="material-icons left">send</i>
-                </a>
-                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeCreateCodeForm()">Close
-                    <i class="material-icons left">close</i>
-                </a>
-            </form>
-        </div>
-        <div class="form-popup" id="addExistingCodeForm">
-            <form class="form-container">
-                <h4>Add Existing Arrangement</h4>
-                <div class="input-field col s6">
-                    <select id="codeSelection" multiple>
-                    </select>
-                    <label for="codeSelection">Select public arrangement codes</label>
-                </div>
-                <a type="submit" class="waves-effect waves-light btn" onclick="addCode(event)">Submit
-                    <i class="material-icons left">send</i>
-                </a>
-                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeAddExistingCodeForm()">Close
-                    <i class="material-icons left">close</i>
-                </a>
-            </form>
-        </div>
-        <div class="form-popup" id="createGroup">
-            <form class="form-container">
-                <h4>Create Group</h4>
-                <div class="row">
-                    <div class="input-field col s8">
-                        <input placeholder="Group name" id="group_name" type="text" class="validate" required>
-                        <label for="group_name">Group Name</label>
-                    </div>
-                </div>
-                <a type="submit" class="waves-effect waves-light btn" id="newGroupSubmitButton">Submit
-                    <i class="material-icons left">send</i>
-                </a>
-                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeForm('createGroup')">Close
-                    <i class="material-icons left">close</i>
-                </a>
-            </form>
-        </div>
-        <div class="form-popup" id="editGroup">
-            <form class="form-container">
-                <h4>Edit Group</h4>
-                <div class="row">
-                    <div class="input-field col s8">
-                        <input placeholder="Group name" id="new_group_name" type="text" class="validate" required>
-                        <label for="new_group_name">Group Name</label>
-                    </div>
-                    <div class="input-field col s4">
-                        <a class="btn-floating aqua" id="delete_group"><i class="material-icons">delete</i></a>
-                    </div>
-                </div>
-                <a type="submit" class="waves-effect waves-light btn" id="groupRenameSubmitButton">Save
-                    <i class="material-icons left">save</i>
-                </a>
-                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeForm('editGroup')">Close
-                    <i class="material-icons left">close</i>
-                </a>
-            </form>
-        </div>
-        <div class="form-popup" id="editArrangement">
-            <form class="form-container">
-                <h4>Edit Book Arrangement</h4>
-                <div class="row">
-                    <div class="input-field col s4">
-                        <input placeholder="Book name" id="new_folder_name" type="text" class="validate" required>
-                        <label for="new_folder_name">Arrangement Name</label>
-                    </div>
-                    <div class="input-field col s4">
-                        <input placeholder="Code name" id="new_code_name" type="text" class="validate" required>
-                        <label for="new_code_name">Code Name</label>
-                    </div>
-                    <div class="input-field col s4">
-                        <a class="btn-floating aqua" id="delete_arrangement"><i class="material-icons">delete</i></a>
-                    </div>
-                </div>
-                <input type="checkbox" class="filled-in" id="new_privateCheckbox" checked="checked" />
-                <label for="new_privateCheckbox">Do you want to keep this private</label>
-                <input type="checkbox" class="filled-in" id="new_publicEditCheckbox" />
-                <label for="new_publicEditCheckbox">Allow the public to make edits</label>
-                <div class="row">
-                    <div class="input-field col s12">
-                        <input placeholder="Password" id="new_edit_password" type="text" class="validate" required>
-                        <label for="new_edit_password">Password</label>
-                        <p style="font-style: italic; font-size: 12px; color: gray;">Password to gain access to edit
-                            files.</p>
-                    </div>
-                </div>
-
-                <a type="submit" class="waves-effect waves-light btn" id="arrangementRenameSubmitButton">Save
-                    <i class="material-icons left">save</i>
-                </a>
-                <a type="button" class="waves-effect waves-light btn cancel"
-                    onclick="closeForm('editArrangement')">Close
-                    <i class="material-icons left">close</i>
-                </a>
-            </form>
-        </div>
-        <div class="form-popup" id="editSong">
-            <form class="form-container">
-                <h4>Edit File</h4>
-                <div class="row">
-                    <div class="input-field col s10">
-                        <input placeholder="Song name" id="new_song_name" type="text" class="validate" required>
-                        <label for="new_song_name">File Name</label>
-                    </div>
-                    <div class="input-field col s2">
-                        <a class="btn-floating aqua" id="delete_song"><i class="material-icons">delete</i></a>
-                    </div>
-                </div>
-                <textarea id="songTextArea"></textarea>
-                <a type="submit" class="waves-effect waves-light btn" id="submitEditSong">Save
-                    <i class="material-icons left">save</i>
-                </a>
-                <a type="button" class="waves-effect waves-light btn cancel" onclick="closeEditSongForm()">Close
-                    <i class="material-icons left">close</i>
-                </a>
-            </form>
-        </div>
-        <div class="fixed-action-btn horizontal click-to-toggle" id="floating-button">
-            <a class="btn-floating btn-large aqua" id="code-options">
-                <i class="material-icons">more_horiz</i>
-            </a>
-            <ul>
-                <li><a class="btn-floating aqua" onclick="openAddExistingCodeForm()"><i
-                            class="material-icons">add_box</i></a></li>
-                <li><a class="btn-floating aqua" onclick="openCreateCodeForm()"><i
-                            class="material-icons">create_new_folder</i></a></li>
-            </ul>
-        </div>
+        <div class="files-list" id="categories-list"></div>
         <br>
         <br>
     </div>
     <div id="songPage" style="display: none;">
         <ul id="song-slide-out" class="side-nav">
-            <li><a id="navbarArrangementName"></a></li>
-            <li>
-                <div class="divider"></div>
-            </li>
-            <input type="text" placeholder="Search for songs" id="navbarSearch" autocomplete="off">
-            <div class="collection" id="navbarSongsList">
+            <div id="navbarsingAlongSongs" style="display: none;">
+                <a id="leaveSingAlongButton" class="btn deep-purple lighten-1">Leave Sing Along</a>
+                <br>
+                <br>
+                <h4>Planned Songs:<h4>
+                <div class="collection" id="navbarsingAlongSongsList">
+                </div>
+            </div>
+            <div id="navbarSongs">
+                <li><a id="navbarArrangementName"></a></li>
+                <li>
+                    <div class="divider"></div>
+                </li>
+                <input type="text" placeholder="Search for songs" id="navbarSearch" autocomplete="off">
+                <div class="collection" id="navbarSongsList">
+                </div>
             </div>
         </ul>
         <nav>
-            <div class="nav-wrapper">
-                <a style="font-size: 16px;" id="songPageNavBarTitle"></a>
+            <div class="nav-wrapper" style="display: flex;">
                 <ul id="nav-mobile" class="left">
                     <li> <a data-activates="song-slide-out"
-                            class="waves-effect waves-light btn-flat song-button-collapse" style="padding: 0;"><i
-                                class="material-icons" style="font-size: 36px;">menu</i></a>
+                        class="btn-flat song-button-collapse" style="text-decoration: none; padding: 0;"><i
+                        class="material-icons" >menu</i></a>
                     </li>
                 </ul>
+                <div id="songPageNavBarTitle"></div>
             </div>
         </nav>
         <br>
         <br>
         <br>
-        <div id="wrapper">
-            <div id="container">
-                <article>
-                    <section class="open-book">
-                        <h2 id="chapter-title"></h2>
-                        <p>
-                        <div id="text"></div>
-                        </p>
-                    </section>
-                </article>
-            </div>
+        <div class="song-container">
+            <h2 id="song-title"></h2>
+            <p>
+                <div id="song-content"></div>
+            </p>
         </div>
-        <div style="text-align: center; margin-bottom: 10px;">
-            <a class="waves-effect waves-light btn previous" id="previousSongButton"><i
-                    class="material-icons">navigate_before</i></a>
-            <a class="waves-effect waves-light btn next" id="nextSongButton"><i
-                    class="material-icons">navigate_next</i></a>
-        </div>
-        <a class="btn-floating btn-large waves-effect waves-light aqua" onclick="backToHomePage()"
-            style="position: fixed; bottom: 35px; right: 25px;"><i class="material-icons">home</i></a>
+    <div id="songPageNextPrevButtons" class="fixed-bottom-center">
+        <a class="btn deep-purple lighten-1 btn-custom previous" id="previousSongButton"><i class="material-icons">navigate_before</i></a>
+        <a class="btn deep-purple lighten-1 btn-custom previous" id="previous10SongsButton"><i class="material-icons">fast_rewind</i></a>
+        <a class="btn deep-purple lighten-1 btn-custom next" id="next10SongsButton"><i class="material-icons">fast_forward</i></a>
+        <a class="btn deep-purple lighten-1 btn-custom next" id="nextSongButton"><i class="material-icons">navigate_next</i></a>
     </div>
-</body>
-<script src="/static/materialize.min.js"></script>
-<script src="/static/script.js"></script>
+        <a id="sharePage" class="btn-floating btn-large btn deep-purple lighten-1 share-button" onclick="sharePage()" style="position: fixed; bottom: 110px; right: 15px; height: 40px; width: 40px;"><i class="material-icons" style="line-height: 40px;">share</i></a>
+        <a id="songPageHome" class="btn-floating btn-large btn deep-purple lighten-1" href="#" style="position: fixed; bottom: 50px; right: 15px;"><i class="material-icons">home</i></a>
+        <div style="position: fixed; top: 65px; right: 5px; width: 40px;">
+            <a class="btn deep-purple lighten-1" id="increaseFontSize" style="width: 40px; margin: 1px; padding: 0px;"><span style="font-size: 16pt;">+</span></a>
+            <a class="btn deep-purple lighten-1" id="decreaseFontSize" style="width: 40px; margin: 1px; padding: 0px;"><span style="font-size: 16pt;">-</span></a>
+        </div>
+    </div>
+    <div id="createSingAlongModal" class="modal">
+        <div class="modal-content">
+            <h4>Create Sing-Along</h4>
+            <form id="createSingAlongForm">
+                <input type="text" id="singAlongName" placeholder="Name" required>
+                <input type="text" id="singAlongHostPassword" placeholder="Host password" required>
+                <textarea id="singAlongDescription" class="materialize-textarea" placeholder="Description..."></textarea>
+                <input type="checkbox" id="isPrivate" class="filled-in btn deep-purple lighten-1">
+                <label for="isPrivate">Private</label>
+                <br>
+                <br>
+                </select>
+                <button type="submit" class="btn deep-purple lighten-1">Start Sing Along</button>
+            </form>
+        </div>
+    </div>
 
+    <!-- Join Sing Along Modal -->
+    <div id="joinSingAlongModal" class="modal">
+        <div class="modal-content">
+            <h4>Join Sing-Along</h4>
+            <form id="joinSingAlongForm">
+                <input type="text" id="singAlongCode" placeholder="Name" required>
+                <input type="text" id="singAlongJoinHostPassword" placeholder="Host password (optional)">
+                <button type="submit" class="btn deep-purple lighten-1">Join Sing Along</button>
+            </form>
+            <br>
+            <h4>Public Sing-Alongs:</h4>
+            <ul id="publicSingAlongsList">
+                <!-- Public sing-alongs will be populated here -->
+            </ul>
+        </div>
+    </div>
+    <!-- Read Me Modal -->
+    <div id="readWelcomeModal" class="modal">
+        <div class="modal-content">
+            <h4>Read Me</h4>
+            <p>Welcome to the Hutterite Bookshelf App! Here you can join, host and share sing-along sessions with friends, family and communities in addition to being able to install the app for offline use. Follow the instructions below to get started:</p>
+
+            <ul>
+                <strong>Update Regularly</strong>
+                <ul>
+                    <li>Periodically check for updates to ensure you have the latest version of the Hutterite Bookshelf app to take advantage of the latest features and improvements.</li>
+                </ul>
+                <strong>How do I install for offline use?</strong>
+                <ul>
+                    <li><a href="#" id="installInstructionsLink">Please see the instructions here</a></li>
+                </ul>
+                <strong>What is a 'sing-along?'</strong>
+                <ul>
+                    <li>A sing-along is a session where participants can join and synchronize to sing songs together, led by a host who controls the song selection. <a href="#" id="singAlongInstructionsLink">You can find more information about using sing-alongs here.</a></li>
+                </ul>
+                <p>For questions, comments, or concerns about this serivce please do not hesitate to email: <a href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a> for further assistance.</p>
+            </ul>
+        </div>
+    </div>
+    <div id="readInstallInstructionsModal" class="modal">
+        <div class="modal-content">
+            <h4>How to Install Hutterite Bookshelf</h4>
+            <p>The Hutterite Bookshelf can be installed on various devices and browsers for offline use. Follow the instructions below for your specific device and browser:</p>
+            <h5>Android</h5>
+            <ul>
+                <strong>Google Chrome</strong>
+                <ul>
+                    <li>Open the app in Google Chrome and navigate to the Hutterite Bookshelf app URL.</li>
+                    <li>Tap the three-dot menu icon in the top-right corner.</li>
+                    <li>Select "Add to Home screen".</li>
+                    <li>Confirm by tapping "Add" in the prompt that appears.</li>
+                    <li>The Hutterite Bookshelf app will now be added to your home screen and can be used offline.</li>
+                </ul>
+                <strong>Firefox</strong>
+                <ul>
+                    <li>Open the app in Firefox and navigate to the Hutterite Bookshelf app URL.</li>
+                    <li>Tap the three-dot menu icon in the bottom-right corner.</li>
+                    <li>Select "Install" or "Add to Home screen".</li>
+                    <li>Follow the prompts to add the app to your home screen.</li>
+                    <li>The Hutterite Bookshelf app will now be added to your home screen and can be used offline.</li>
+                </ul>
+            </ul>
+
+            <h5>iOS</h5>
+            <ul>
+                <strong>Safari</strong>
+                <ul>
+                    <li>Open the app in Safari and navigate to the Hutterite Bookshelf app URL.</li>
+                    <li>Tap the Share button (square with an uHutterite Bookshelf apprd arrow) at the bottom of the screen.</li>
+                    <li>Scroll down and select "Add to Home Screen".</li>
+                    <li>Confirm by tapping "Add" in the top-right corner of the prompt that appears.</li>
+                    <li>The app icon will be added to your home screen, and you can launch it from there and use it offline.</li>
+                </ul>
+            </ul>
+
+            <h5>Desktop</h5>
+            <ul>
+                <strong>Google Chrome</strong>
+                <ul>
+                    <li>Open the app in Google Chrome and navigate to the Hutterite Bookshelf app URL.</li>
+                    <li>Click the Install icon (plus in a circle) in the address bar or the three-dot menu icon in the top-right corner.</li>
+                    <li>Select "Install Sing Along".</li>
+                    <li>Confirm by clicking "Install" in the prompt that appears.</li>
+                    <li>The Hutterite Bookshelf app will be installed as a standalone app and can be launched from your desktop or start menu.</li>
+                </ul>
+                <strong>Microsoft Edge</strong>
+                <ul>
+                    <li>Open the app in Microsoft Edge and navigate to the Hutterite Bookshelf app URL.</li>
+                    <li>Click the Install icon (plus in a circle) in the address bar or the three-dot menu icon in the top-right corner.</li>
+                    <li>Select "Install Sing Along".</li>
+                    <li>Confirm by clicking "Install" in the prompt that appears.</li>
+                    <li>The Hutterite Bookshelf app will be installed as a standalone app and can be launched from your desktop or start menu.</li>
+                </ul>
+                <strong>Firefox</strong>
+                <ul>
+                    <li>Open the app in Firefox and navigate to the Hutterite Bookshelf app URL.</li>
+                    <li>Firefox does not fully support desktop Hutterite Bookshelf app installation. However, you can create a shortcut:</li>
+                    <li>Click the three-dot menu icon in the top-right corner.</li>
+                    <li>Select "Save Page As" and choose the location.</li>
+                    <li>Manually create a shortcut on your desktop.</li>
+                    <li>You can use the shortcut to access the app quickly, but it won't be a standalone Hutterite Bookshelf app like in Chrome or Edge.</li>
+                </ul>
+            </ul>
+        </div>
+    </div>
+    <div id="readSingAlongInstructionsModal" class="modal">
+        <div class="modal-content">
+            <h4>Sing-Along Sessions</h4>
+            <ul>
+                <li>To view the join/create sing-along options press the icon in the top left corner of the home page.</li>
+                <strong>Start Sing-Along:</strong>
+                <ul>
+                    <li>An internet connection is required to use sing-along.</li>
+                    <li>You have the option to plan songs before starting a session. You can add songs from the home page using the checkbox on the right of the song. The search functionality is highly efficient.</li>
+                    <li>Once you have selected songs, click "Create Sing Along". Enter a code name that you can share with others. The password is for the host only, in case you get logged out. This password is used in the "Join Sing Along" section where you need to manually enter the information and press "Join".</li>
+                    <li>You can choose to make the session private or public. If it is public, anyone can join your sing-along. If it is private, only the host can share the session.</li>
+                    <li>To end the sing-along session, click the button on the top left inside the song page and select "End Sing Along".</li>
+                </ul>
+                <strong>Join Sing-Along:</strong>
+                <ul>
+                    <li>To join a sing-along, simply open the link you have been provided, select from the list of public sing-alongs, or manually enter the code you have been given.</li>
+                    <li>Once you have joined, you cannot select any songs. You will be synced to what the host is currently viewing, and only the host can change songs.</li>
+                    <li>To leave the sing-along, click the button on the top left inside the song page and select "Leave Sing Along".</li>
+                </ul>
+            </ul>
+            <p>For questions, comments, or concerns about this serivce please do not hesitate to email: <a href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a> for assistance.</p>
+        </div>
+    </div>
+</div>
+</body>
+<script src="/static/script.js"></script>
 </html>
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register("/sw.js", { scope: '/' })
+        .then(function(registration) {
+        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, function(err) {
+        console.log('ServiceWorker registration failed: ', err);
+        });
+    });
+}
+document.getElementById('updateButton').addEventListener('click', function() {
+    if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ action: 'updateCache' });
+        location.reload();
+    }
+});
+</script>

@@ -8,3 +8,11 @@ tmp/
 __pycache__/
 test.py
 test2.py
+OLD_script.js
+*.json
+test.py
+test2.py
+test3.py
+test4.py
+test5.py
+extracted_old_body_contents.txt

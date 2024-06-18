@@ -1,5 +1,7 @@
 import os
+
 from natsort import natsorted
+
 
 def get_text_files():
     text_files = []
@@ -31,5 +33,6 @@ for text_file in text_files:
         with open(text_file, 'r', encoding='utf-8') as song_file:
             data[group][subgroup].setdefault(song_name, song_file.read())
 import json
+
 with open('data.json', 'w', encoding='utf-8') as f:
     json.dump(data, f, ensure_ascii=False, indent=4)
