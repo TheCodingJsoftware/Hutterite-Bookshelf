@@ -15,7 +15,6 @@ class SongLoader {
     }
 
     async loadAllSongs(callback) {
-        console.log("loading songs");
         try {
             const response = await fetch(this.dataUrl);
             const data = await response.json();
@@ -30,7 +29,7 @@ class SongLoader {
 
     processData(data) {
         this.songs = { ...data };
-        this.songNames = Object.keys(this.songs); // Ensure this is populated correctly
+        this.songNames = Object.keys(this.songs);
         this.categories = this.getAllCategories();
     }
 
@@ -63,7 +62,6 @@ class SongLoader {
     }
 
     getAllCategories() {
-        console.log("loading categories");
         const categoriesSet = new Set();
         Object.values(this.songs).forEach(song => {
             song.categories.forEach(category => {
@@ -168,8 +166,10 @@ class HomePage {
 
         const categoryElements = {};
 
+        const sortedCategories = this.songLoader.categories.sort(new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' }).compare);
+
         // Create nested category structure
-        this.songLoader.categories.forEach(category => {
+        sortedCategories.forEach(category => {
             const parts = category.split('\\');
             let currentLevel = categoriesList;
 
@@ -1005,7 +1005,6 @@ async function sharePage() {
             text: fullMessage,
             url: finalUrl
         }).then(() => {
-            console.log('Thanks for sharing!');
         }).catch(console.error);
     } else {
         copyToClipboard(fullMessage);
@@ -1027,6 +1026,23 @@ document.addEventListener("DOMContentLoaded", function () {
     const homePage = new HomePage(songLoader);
     const songPage = new SongPage(songLoader);
     const socket = io({ transports: ['websocket', 'polling'] });  // Ensure WebSocket is used first
+
+    socket.on('connect', () => {
+        console.log('Connected to the server via WebSocket');
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('Connection error:', error);
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.warn('Disconnected from the server:', reason);
+        if (reason === 'io server disconnect') {
+            // The server has forcefully disconnected the socket
+            socket.connect(); // Reconnect manually
+        }
+    });
+
     songLoader.loadAllSongs(() => {
         PageHandler.registerPage('homePage', homePage);
         PageHandler.registerPage('songPage', songPage);
