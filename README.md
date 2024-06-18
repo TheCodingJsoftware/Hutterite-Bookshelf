@@ -1,6 +1,35 @@
+<p align="center">
+    <img height="200" width="200" src="static/icon.png" style="border-radius: 50%;"/>
+</p>
+
 # Hutterite Bookshelf
 
 Your own bookshelf of Hutterite songs.
+
+## Status
+
+<p align="center">
+    <a><img src="https://img.shields.io/github/created-at/TheCodingJsoftware/Hutterite-Bookshelf?style=for-the-badge"/></a>
+    <a><img src="https://img.shields.io/github/license/TheCodingJsoftware/Hutterite-Bookshelf?&style=for-the-badge"/></a>
+    <a><img src="https://img.shields.io/static/v1?label=Platform&message=Windows&style=for-the-badge"/></a>
+    <a><img src="https://img.shields.io/github/repo-size/TheCodingJsoftware/Hutterite-Bookshelf?label=Size&style=for-the-badge"/></a>
+    <a><img src="https://img.shields.io/github/commit-activity/m/TheCodingJsoftware/Hutterite-Bookshelf?style=for-the-badge"/></a>
+    <a><img src="https://img.shields.io/github/languages/count/TheCodingJsoftware/Hutterite-Bookshelf?style=for-the-badge"></a>
+    <a><img src="https://img.shields.io/github/languages/top/TheCodingJsoftware/Hutterite-Bookshelf?style=for-the-badge"></a>
+    <a><img src="https://img.shields.io/badge/python-3.12-blue?style=for-the-badge"></a>
+    <a><img src="https://img.shields.io/docker/automated/jarebear/hutterite-bookshelf?style=for-the-badge"></a>
+    <a><img src="https://img.shields.io/docker/automated/jarebear/hutterite-bookshelf?style=for-the-badge"></a>
+</p>
+
+## Technologies Used
+
+<p align="center">
+    <a><img src="https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white"></a>
+    <a><img src="https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54"></a>
+    <a><img src="https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E"></a>
+    <a><img src="https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white"></a>
+    <a><img src="https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white"></a>
+</p>
 
 ## Setup
 
