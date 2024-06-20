@@ -369,7 +369,7 @@ input:not([type]):focus:not([readonly])+label, input[type=text]:not(.browser-def
     font-size: 16px;
 }
 #singAlongControls{
-    display: inline-flex;
+    display: none;
 }
 #song-slide-out{
     max-height: 100vh;
