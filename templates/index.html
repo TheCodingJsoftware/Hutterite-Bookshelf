@@ -328,10 +328,15 @@
                 const VERSION = data.version;
                 const versionElement = document.getElementById('storedVersion');
                 let storedVersion = localStorage.getItem('appVersion');
+                if (!storedVersion){
+                    storedVersion = "v1.0.0";
+                }
                 if (storedVersion && storedVersion !== VERSION) {
+                    localStorage.setItem('appVersion', VERSION);
                     try {
                         if (navigator.serviceWorker.controller) {
                             M.toast({ html: 'Updating...' });
+                            localStorage.setItem('appVersion', VERSION);
                             navigator.serviceWorker.controller.postMessage({ action: 'updateCache' });
                             navigator.serviceWorker.addEventListener('message', function(event) {
                                 if (event.data.action === 'cacheUpdated') {
