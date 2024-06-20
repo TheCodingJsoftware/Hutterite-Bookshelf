@@ -392,6 +392,7 @@ input:not([type]):focus:not([readonly])+label, input[type=text]:not(.browser-def
 #navbarSongs{
     overflow-y: scroll;
     overflow-x: hidden;
+    scrollbar-width: none;
 }
 #navbarSearch{
     margin-bottom: 0;
