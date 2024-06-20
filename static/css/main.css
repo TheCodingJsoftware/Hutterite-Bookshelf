@@ -184,11 +184,15 @@ nav {
     background-color: #7d5bbe;
     z-index: 10;
 }
-#navbarArrangementName {
+#navbarsingAlongSongsList p{
+    font-size: 16px;
     text-align: left;
+    padding: 5px;
+}
+#navbarArrangementName {
+    text-align: center;
     font-size: 16pt;
     padding-top: 5px;
-    padding-left: 5px;
     text-decoration: none;
 }
 #songPageNavBarTitle{
@@ -359,4 +363,41 @@ input:not([type]):focus:not([readonly])+label, input[type=text]:not(.browser-def
 }
 .spinner-layer{
     border-color: #7d5bbe;
+}
+#connectedClients{
+    padding: 5px;
+    font-size: 16px;
+}
+#singAlongControls{
+    display: inline-flex;
+}
+#song-slide-out{
+    max-height: 100vh;
+    overflow-y: auto;
+    padding-bottom: 0;
+}
+#song-slide-out .collection,
+#song-slide-out #navbarsingAlongSongsList,
+#song-slide-out #navbarSongsList {
+    max-height: calc(100vh - 150px); /* Adjust based on the height of other elements */
+    overflow-y: auto; /* Allow vertical scrolling within collections */
+}
+
+
+#singAlongControls {
+    position: sticky; /* Make the controls sticky to always be accessible */
+    bottom: 0;
+    background: white; /* Ensure it doesn't blend with the content */
+    width: 100%;
+    z-index: 1; /* Ensure it stays above other content */
+}
+#navbarSongs{
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+#navbarSearch{
+    margin-bottom: 0;
+}
+.modal{
+    max-height: 80%;
 }

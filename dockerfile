@@ -1,22 +1,28 @@
-# start by pulling the python image
+# Use a lightweight base image with Python
 FROM python:3.12-alpine
 
-# copy the requirements file into the image
-COPY ./requirements.txt /app/requirements.txt
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-# switch working directory
+# Install dependencies
+RUN apk update && apk add postgresql-dev gcc python3-dev musl-dev
+
+# Set the working directory
 WORKDIR /app
 
-# install the dependencies and packages in the requirements file
-RUN pip install -r requirements.txt
+# Copy the requirements file and install dependencies
+COPY ./requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# copy every content from the local file to the image
+# Copy the rest of the application code
 COPY . /app
 
-# configure the container to run in an executed manner
-ENTRYPOINT [ "python" ]
+# Expose the port the app runs on
+EXPOSE 5052
 
-CMD ["main.py" ]
+# Command to run the application
+CMD ["python", "main.py"]
 
 # docker image build -t hutterite-bookshelf .
 # docker run -p 5000:5000 -d hutterite-bookshelf

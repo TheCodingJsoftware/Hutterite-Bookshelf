@@ -1,106 +1,177 @@
 import os
-from flask import Flask, render_template, request, jsonify, make_response, send_from_directory
-from flask_socketio import SocketIO, emit, join_room, leave_room
+import json
+import tornado.ioloop
+import tornado.web
+import tornado.websocket
+from tornado.options import define, options
+import jinja2
+from datetime import datetime, timedelta
 
-app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app, cors_allowed_origins="*")
+define("port", default=5052, help="run on the given port", type=int)
+loader = jinja2.FileSystemLoader("templates")
+env = jinja2.Environment(loader=loader)
 
-sing_alongs: dict[str, list | str | bool] = {}
+sing_alongs: dict[str, dict[str, list[tornado.websocket.WebSocketHandler] | set[str]]] = {}
+INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
+VERSION = '1.0.1'
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+class MainHandler(tornado.web.RequestHandler):
+    def get(self):
+        template = env.get_template("index.html")
+        rendered_template = template.render()
+        self.write(rendered_template)
 
-@app.route("/sw.js")
-def sw():
-    return app.send_static_file('sw.js')
+class ServiceWorkerHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.set_header('Content-Type', 'application/javascript')
+        self.render("static/sw.js")
+
+class PublicSingAlongsHandler(tornado.web.RequestHandler):
+    def get(self):
+        public_sing_alongs = [
+            {"name": key, "description": value["description"]}
+            for key, value in sing_alongs.items() if not value["private"]
+        ]
+        self.write(json.dumps(public_sing_alongs))
 
 
-@app.route('/create_sing_along', methods=['POST'])
-def create_sing_along():
-    data: dict[str, list | bool | str] = request.json
-    name = data.get('name')
-    if name in sing_alongs:
-        return jsonify({'success': False, 'message': 'Sing along with this name already exists.'})
-    songs = data.get('songs', [])
-    current_song = None
-    if songs:
-        current_song = songs[0]
-    sing_alongs[name] = {
-        'description': data.get('description', 'Unspecified description'),
-        'songs': songs,
-        'password': data.get('password', name),
-        'is_private': data.get('is_private', False),
-        'current_song': current_song,
-        'played_songs': [],
-    }
-    return jsonify({'success': True})
+class VersionHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write({"version": VERSION})
 
-@app.route('/get_public_sing_alongs', methods=['GET'])
-def get_public_sing_alongs():
-    public_sing_alongs = {name: details for name, details in sing_alongs.items() if not details['is_private']}
-    return jsonify(public_sing_alongs)
+class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
+    def open(self):
+        self.sing_along_id = None
+        self.is_host = False
 
-@app.route('/delete_sing_along', methods=['POST'])
-def delete_sing_along():
-    data: dict[str, str | list | bool] = request.json
-    name = data.get('name')
-    if name in sing_alongs:
-        del sing_alongs[name]
-        return jsonify({'success': True})
-    return jsonify("error", {'message': 'Sing along not found'})
+    def on_message(self, message):
+        data = json.loads(message)
+        action = data.get("action")
 
-@socketio.on('leave_sing_along')
-def handle_leave(data: dict[str, str | list | bool]):
-    try:
-        sing_along_name = data.get('sing_along_name')
-        # leave_room(sing_along_name)
-        if data.get('is_host', False):
-            emit('left_sing_along', {'message': 'Sing along ended.'}, room=sing_along_name)
-        else:
-            emit('left_sing_along', {'message': 'You have left the sing along.'}, to=request.sid)
-    except Exception as e:
-        emit('error', {'message': f"handle_leave: {e}"}, to=request.sid)
+        if action == "create":
+            self.create_sing_along(data)
+        elif action == "join":
+            self.join_sing_along(data)
+        elif action == "change_song":
+            self.change_song(data)
+        elif action == "leave":
+            self.leave_sing_along()
+        elif action == "end":
+            self.end_sing_along()
+        elif action == "sync":
+            self.sync_client()
 
-@socketio.on('join_sing_along')
-def handle_join(data):
-    try:
-        sing_along_name = data.get('sing_along_name')
-        password = data.get('password', '')
+    def create_sing_along(self, data: dict[str, str | bool | list[str]]):
+        sing_along_id = data.get("sing_along_id")
+        host_password = data.get("host_password")
+        description = data.get("description")
+        song_list = data.get("song_list")
+        private = data.get("private")
 
-        if sing_along_name in sing_alongs:
-            join_room(sing_along_name)
-            if sing_alongs[sing_along_name]['password'] == password:
-                emit('joined_sing_song', {
-                    'sing_along_name': sing_along_name,
-                    'song': sing_alongs[sing_along_name]['current_song'],
-                    'songs': sing_alongs[sing_along_name].get('songs'),
-                    'played_songs': sing_alongs[sing_along_name].get('played_songs'),
-                    'is_host': True
-                }, to=request.sid)
+        current_song = song_list[0] if song_list else None
+        sing_alongs[sing_along_id] = {
+            "host": self,
+            "host_password": host_password,
+            "description": description,
+            "song_list": song_list,
+            "current_song": current_song,
+            "private": private,
+            "clients": [],
+            "played_songs": set(),
+            "last_activity": datetime.now(),
+        }
+
+        self.sing_along_id = sing_along_id
+        self.is_host = True
+        self.write_message({"action": "created", "sing_along_id": sing_along_id})
+
+    def join_sing_along(self, data):
+        sing_along_id = data.get("sing_along_id")
+        if sing_along := sing_alongs.get(sing_along_id):
+            self.sing_along_id = sing_along_id
+            if data.get("host_password") == sing_alongs[sing_along_id]['host_password']:
+                self.is_host = True
             else:
-                emit('joined_sing_song', {
-                    'sing_along_name': sing_along_name,
-                    'song': sing_alongs[sing_along_name]['current_song'],
-                    'songs': sing_alongs[sing_along_name].get('songs'),
-                    'played_songs': sing_alongs[sing_along_name].get('played_songs'),
-                    'is_host': False,
-                }, to=request.sid)
+                sing_along["clients"].append(self)
+            played_songs_list = list(sing_along["played_songs"])
+            song_list = sing_along["song_list"]
+            self.write_message({"action": "joined", "sing_along_id": sing_along_id, "current_song": sing_along["current_song"], "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
         else:
-            emit('error', {'message': 'Sing along not found'}, to=request.sid)
-    except Exception as e:
-        emit('error', {'message': f"handle_join: {e}"}, to=request.sid)
+            self.write_message({"action": "error", "message": "Sing-along not found"})
 
-@socketio.on('change_song')
-def handle_change_song(data: dict[str, str | list | bool]):
-    sing_along_name = data.get('sing_along_name')
-    if sing_along_name in sing_alongs:
-        new_song = data['new_song']
-        sing_alongs[sing_along_name]['current_song'] = new_song
-        sing_alongs[sing_along_name]['played_songs'].append(new_song)
-        emit('sync_song', {'sing_along_name': sing_along_name, 'song': new_song, 'played_songs': sing_alongs[sing_along_name].get('played_songs'), 'songs': sing_alongs[sing_along_name].get('songs'), 'is_host': False}, room=sing_along_name)
+    def change_song(self, data):
+        sing_along_id = self.sing_along_id
+        song = data.get("song")
 
-port = int(os.environ.get('PORT', 5052))
-if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=port)
+        if sing_along_id and sing_along_id in sing_alongs:
+            sing_along = sing_alongs[sing_along_id]
+            sing_along["current_song"] = song
+            sing_along["played_songs"].add(song)
+            sing_along["last_activity"] = datetime.now()
+
+            played_songs_list = list(sing_along["played_songs"])
+            song_list = sing_along["song_list"]
+            for client in sing_along["clients"]:
+                client.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
+            self.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
+
+    def sync_client(self):
+        if self.sing_along_id and self.sing_along_id in sing_alongs:
+            sing_along = sing_alongs[self.sing_along_id]
+            song = sing_along["current_song"]
+            played_songs_list = list(sing_along["played_songs"])
+            song_list = sing_along["song_list"]
+            self.write_message({"action": "sync", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
+
+    def leave_sing_along(self):
+        if self.sing_along_id and self.sing_along_id in sing_alongs:
+            sing_along = sing_alongs[self.sing_along_id]
+
+            sing_along["clients"].remove(self)
+            self.write_message({"action": "left"})
+
+
+    def end_sing_along(self):
+        if self.is_host and self.sing_along_id and self.sing_along_id in sing_alongs:
+            sing_along = sing_alongs[self.sing_along_id]
+            for client in sing_along["clients"]:
+                client.write_message({"action": "end_sing_along"})
+            del sing_alongs[self.sing_along_id]
+            self.sing_along_id = None
+
+    def on_close(self):
+        if self.sing_along_id and self.sing_along_id in sing_alongs:
+            sing_along = sing_alongs[self.sing_along_id]
+            sing_along["clients"].remove(self)
+            if self.is_host:
+                for client in sing_along["clients"]:
+                    client.write_message({"action": "end_sing_along"})
+                del sing_alongs[self.sing_along_id]
+
+def check_inactive_sessions():
+    now = datetime.now()
+    inactive_sing_alongs = [id for id, sa in sing_alongs.items() if now - sa["last_activity"] > INACTIVITY_TIMEOUT]
+
+    for sing_along_id in inactive_sing_alongs:
+        sing_along = sing_alongs[sing_along_id]
+        for client in sing_along["clients"]:
+            client.write_message({"action": "end_sing_along"})
+        del sing_alongs[sing_along_id]
+
+def make_app():
+    return tornado.web.Application([
+        (r"/", MainHandler),
+        (r"/ws", SingAlongWebSocket),
+        (r"/sw.js", ServiceWorkerHandler),
+        (r"/version", VersionHandler),
+        (r"/public_sing_alongs", PublicSingAlongsHandler),
+    ], static_path=os.path.join(os.path.dirname(__file__), "static")
+                                   )
+
+if __name__ == "__main__":
+    options.parse_command_line()
+
+    app = tornado.httpserver.HTTPServer(make_app())
+    app.listen(options.port)
+    tornado.ioloop.PeriodicCallback(check_inactive_sessions, 60 * 60 * 1000).start()  # Check every hour
+    tornado.ioloop.IOLoop.instance().start()

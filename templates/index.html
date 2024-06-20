@@ -11,15 +11,14 @@
     <meta property="og:description" content="Your own bookshelf of Hutterite songs." />
     <meta name="description" content="Your own bookshelf of Hutterite songs.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <link rel="icon" href="/static/favicon.png">
     <link rel="manifest" href="/static/manifest.json">
     <script src="/static/jquery.js"></script>
     <script src="/static/bootstrap.js"></script>
     <script src="/static/bootstrap-select.js"></script>
     <script type="module" src="/static/zero-md.min.js"></script>
-    <script src="/static/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/static/materialize.min.js"></script>
     <script src="/static/suneditor.min.js"></script>
     <link type="text/css" href="/static/css/bootstrap.css" rel="stylesheet" />
@@ -43,7 +42,7 @@
                             </div>
                             <div class="col s1 pull-s10">
                                 <img class="circle" style="background-color: black;" src="/static/icon.png" alt="logo">
-                                <p style="margin: 0; height: 10px; margin-left: 10px;">v1.0.0</p>
+                                <p style="margin: 0; height: 10px; margin-left: 10px;" id="storedVersion">v1.0.1</p>
                             </div>
                         </div>
                     </div>
@@ -61,7 +60,7 @@
             <li><button id="updateButton" class="btn-flat"><i class="material-icons left" style="font-size: 36px;">update</i>Update</button></li>
             <footer class="page-footer">
                 <div class="container" style="padding: 0;">
-                    <p class="grey-text text-lighten-4" style="line-height: 15px;">For questions, comments, or concerns about this serivce please email: <a href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a></p>
+                    <p class="grey-text text-lighten-4" style="line-height: 15px; text-wrap: balance;">For questions, comments, or concerns about this serivce please email: <a href="mailto:jared@pinelandfarms.ca" style="padding: 0;">jared@pinelandfarms.ca</a></p>
                 </div>
                 <div class="footer-copyright">
                     <div class="container" style="padding: 0;">
@@ -118,21 +117,26 @@
     <div id="songPage" style="display: none;">
         <ul id="song-slide-out" class="side-nav">
             <div id="navbarsingAlongSongs" style="display: none;">
-                <a id="leaveSingAlongButton" class="btn deep-purple lighten-1">Leave Sing Along</a>
                 <br>
+                <div id="connectedClients">
+                </div>
                 <br>
                 <h4>Planned Songs:<h4>
                 <div class="collection" id="navbarsingAlongSongsList">
                 </div>
             </div>
+            <div id="navbarArrangementName"></div>
             <div id="navbarSongs">
-                <li><a id="navbarArrangementName"></a></li>
                 <li>
                     <div class="divider"></div>
                 </li>
                 <input type="text" placeholder="Search for songs" id="navbarSearch" autocomplete="off">
                 <div class="collection" id="navbarSongsList">
                 </div>
+            </div>
+            <div id="singAlongControls">
+                <a id="leaveSingAlongButton" class="btn deep-purple lighten-1">Leave Sing Along</a>
+                <a id="syncButton" class="btn deep-purple lighten-1">Sync</a>
             </div>
         </ul>
         <nav>
@@ -174,12 +178,13 @@
             <form id="createSingAlongForm">
                 <input type="text" id="singAlongName" placeholder="Name" required>
                 <input type="text" id="singAlongHostPassword" placeholder="Host password" required>
-                <textarea id="singAlongDescription" class="materialize-textarea" placeholder="Description..."></textarea>
+                <textarea id="singAlongDescription" class="materialize-textarea" placeholder="(Optional) Description..."></textarea>
                 <input type="checkbox" id="isPrivate" class="filled-in btn deep-purple lighten-1">
                 <label for="isPrivate">Private</label>
                 <br>
                 <br>
-                </select>
+                <P id="planSongStatus"></p>
+                <br>
                 <button type="submit" class="btn deep-purple lighten-1">Start Sing Along</button>
             </form>
         </div>
@@ -218,7 +223,7 @@
                 </ul>
                 <strong>What is a 'sing-along?'</strong>
                 <ul>
-                    <li>A sing-along is a session where participants can join and synchronize to sing songs together, led by a host who controls the song selection. <a href="#" id="singAlongInstructionsLink">You can find more information about using sing-alongs here.</a></li>
+                    <li>A sing-along is a session where users are synced to view the same songs as the host who controls the song selection. <a href="#" id="singAlongInstructionsLink">You can find more information about using sing-alongs here.</a></li>
                 </ul>
                 <p>For questions, comments, or concerns about this serivce please do not hesitate to email: <a href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a> for further assistance.</p>
             </ul>
@@ -232,7 +237,6 @@
             <ul>
                 <strong>Google Chrome</strong>
                 <ul>
-                    <li>Open the app in Google Chrome and navigate to the Hutterite Bookshelf app URL.</li>
                     <li>Tap the three-dot menu icon in the top-right corner.</li>
                     <li>Select "Add to Home screen".</li>
                     <li>Confirm by tapping "Add" in the prompt that appears.</li>
@@ -240,47 +244,40 @@
                 </ul>
                 <strong>Firefox</strong>
                 <ul>
-                    <li>Open the app in Firefox and navigate to the Hutterite Bookshelf app URL.</li>
                     <li>Tap the three-dot menu icon in the bottom-right corner.</li>
                     <li>Select "Install" or "Add to Home screen".</li>
                     <li>Follow the prompts to add the app to your home screen.</li>
                     <li>The Hutterite Bookshelf app will now be added to your home screen and can be used offline.</li>
                 </ul>
             </ul>
-
             <h5>iOS</h5>
             <ul>
                 <strong>Safari</strong>
                 <ul>
-                    <li>Open the app in Safari and navigate to the Hutterite Bookshelf app URL.</li>
-                    <li>Tap the Share button (square with an uHutterite Bookshelf apprd arrow) at the bottom of the screen.</li>
+                    <li>Tap the Share button (square with an arrow) at the bottom of the screen.</li>
                     <li>Scroll down and select "Add to Home Screen".</li>
                     <li>Confirm by tapping "Add" in the top-right corner of the prompt that appears.</li>
                     <li>The app icon will be added to your home screen, and you can launch it from there and use it offline.</li>
                 </ul>
             </ul>
-
             <h5>Desktop</h5>
             <ul>
                 <strong>Google Chrome</strong>
                 <ul>
-                    <li>Open the app in Google Chrome and navigate to the Hutterite Bookshelf app URL.</li>
                     <li>Click the Install icon (plus in a circle) in the address bar or the three-dot menu icon in the top-right corner.</li>
-                    <li>Select "Install Sing Along".</li>
+                    <li>Select "Install Hutterite Bookshelf".</li>
                     <li>Confirm by clicking "Install" in the prompt that appears.</li>
                     <li>The Hutterite Bookshelf app will be installed as a standalone app and can be launched from your desktop or start menu.</li>
                 </ul>
                 <strong>Microsoft Edge</strong>
                 <ul>
-                    <li>Open the app in Microsoft Edge and navigate to the Hutterite Bookshelf app URL.</li>
                     <li>Click the Install icon (plus in a circle) in the address bar or the three-dot menu icon in the top-right corner.</li>
-                    <li>Select "Install Sing Along".</li>
+                    <li>Select "Install Hutterite Bookshelf".</li>
                     <li>Confirm by clicking "Install" in the prompt that appears.</li>
                     <li>The Hutterite Bookshelf app will be installed as a standalone app and can be launched from your desktop or start menu.</li>
                 </ul>
                 <strong>Firefox</strong>
                 <ul>
-                    <li>Open the app in Firefox and navigate to the Hutterite Bookshelf app URL.</li>
                     <li>Firefox does not fully support desktop Hutterite Bookshelf app installation. However, you can create a shortcut:</li>
                     <li>Click the three-dot menu icon in the top-right corner.</li>
                     <li>Select "Save Page As" and choose the location.</li>
@@ -294,20 +291,20 @@
         <div class="modal-content">
             <h4>Sing-Along Sessions</h4>
             <ul>
-                <li>To view the join/create sing-along options press the icon in the top left corner of the home page.</li>
                 <strong>Start Sing-Along:</strong>
                 <ul>
-                    <li>An internet connection is required to use sing-along.</li>
-                    <li>You have the option to plan songs before starting a session. You can add songs from the home page using the checkbox on the right of the song. The search functionality is highly efficient.</li>
-                    <li>Once you have selected songs, click "Create Sing Along". Enter a code name that you can share with others. The password is for the host only, in case you get logged out. This password is used in the "Join Sing Along" section where you need to manually enter the information and press "Join".</li>
-                    <li>You can choose to make the session private or public. If it is public, anyone can join your sing-along. If it is private, only the host can share the session.</li>
-                    <li>To end the sing-along session, click the button on the top left inside the song page and select "End Sing Along".</li>
+                    <li>An internet connection is required to join or create sing-alongs.</li>
+                    <li>(Optional) You can select songs from the home page using the checkbox to plan songs for a sing-along. You can use the search box to narrow down songs quickly.</li>
+                    <li>Once you have selected songs, click "Create Sing Along". Enter a code name that you can share with others. The password is only for the host in case you get logged out. This password is used in the "Join Sing Along" section where you need to manually enter the information and press "Join".</li>
+                    <li>You can choose to make the session private or public. If it is public, it will show under public sing-alongs.</li>
+                    <li>To end a sing-along session, open the side panel inside the song page and select "End Sing Along". Note: Only the host can end a sing-along.</li>
+                    <li>A sing-along session will end after 5 hours of inactivity.</li>
                 </ul>
                 <strong>Join Sing-Along:</strong>
                 <ul>
-                    <li>To join a sing-along, simply open the link you have been provided, select from the list of public sing-alongs, or manually enter the code you have been given.</li>
-                    <li>Once you have joined, you cannot select any songs. You will be synced to what the host is currently viewing, and only the host can change songs.</li>
-                    <li>To leave the sing-along, click the button on the top left inside the song page and select "Leave Sing Along".</li>
+                    <li>To join a sing-along, (1) simply open the link you have been provided, (2) select from the list of public sing-alongs, (3) or manually enter the code you have been given.</li>
+                    <li>Once you have joined you will be synced to what the host is currently viewing. Whenever the host changes a song, it will sync to view that same song.</li>
+                    <li>To leave a sing-along, open the side panel inside the song page and select "Leave Sing Along".</li>
                 </ul>
             </ul>
             <p>For questions, comments, or concerns about this serivce please do not hesitate to email: <a href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a> for assistance.</p>
@@ -318,20 +315,40 @@
 <script src="/static/script.js"></script>
 </html>
 <script>
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register("/sw.js", { scope: '/' })
-        .then(function(registration) {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        }, function(err) {
-        console.log('ServiceWorker registration failed: ', err);
+    document.addEventListener('DOMContentLoaded', (event) => {
+        update();
+        document.getElementById('updateButton').addEventListener('click', function() {
+            update();
         });
     });
-}
-document.getElementById('updateButton').addEventListener('click', function() {
-    if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ action: 'updateCache' });
-        location.reload();
+    function update(){
+        fetch('/version')
+            .then(response => response.json())
+            .then(data => {
+                const VERSION = data.version;
+                const versionElement = document.getElementById('storedVersion');
+                let storedVersion = localStorage.getItem('appVersion');
+                if (storedVersion && storedVersion !== VERSION) {
+                    try {
+                        if (navigator.serviceWorker.controller) {
+                            M.toast({ html: 'Updating...' });
+                            navigator.serviceWorker.controller.postMessage({ action: 'updateCache' });
+                            navigator.serviceWorker.addEventListener('message', function(event) {
+                                if (event.data.action === 'cacheUpdated') {
+                                    localStorage.setItem('appVersion', VERSION);
+                                    location.reload();
+                                }
+                            });
+                        }
+                    } catch (err) {
+                        M.toast({ html: 'Failed to update' });
+                    }
+                } else {
+                    M.toast({ html: 'No update available.' });
+                }
+                storedVersion = localStorage.getItem('appVersion');
+                versionElement.textContent = `v${storedVersion}`;
+            })
+            .catch(error => console.error('Error fetching version:', error));
     }
-});
 </script>

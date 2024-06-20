@@ -6,7 +6,6 @@ const includeToCache = [
     '/static/icon.png',
     '/static/data.json',
     '/static/custom_content.json',
-    '/static/socket.io.min.js',
     '/static/jquery.js',
     '/static/jquery.min.js',
     '/static/sw.js',
@@ -87,18 +86,26 @@ self.addEventListener('message', event => {
 
 
 function updateCache() {
-    caches.open(cacheName).then(cache => {
-        return Promise.all(
-            includeToCache.map(url => {
-                return fetch(url, { cache: 'no-store' }).then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return cache.put(url, response);
-                }).catch(error => {
-                    console.error('Failed to fetch and cache:', url, error);
-                });
-            })
-        );
+    caches.keys().then(function(names) {
+        return Promise.all(names.map(name => caches.delete(name)));
+    }).then(function() {
+        caches.open(cacheName).then(cache => {
+            return Promise.all(
+                includeToCache.map(url => {
+                    return fetch(url, { cache: 'no-store' }).then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return cache.put(url, response);
+                    }).catch(error => {
+                        console.error('Failed to fetch and cache:', url, error);
+                    });
+                })
+            );
+        });
+    }).then(() => {
+        self.clients.matchAll().then(clients => {
+            clients.forEach(client => client.postMessage({ action: 'cacheUpdated' }));
+        });
     });
 }
