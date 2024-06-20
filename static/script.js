@@ -1191,7 +1191,7 @@ async function sharePage() {
     const message = singAlongCode
         ? "Come sing along with us:"
         : "Join me to sing:";
-    const fullMessage = `${message}\n${finalUrl}`;
+    const fullMessage = `${message}`;
 
     if (navigator.share) {
         await navigator
