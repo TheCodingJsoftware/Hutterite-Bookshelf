@@ -368,9 +368,6 @@ input:not([type]):focus:not([readonly])+label, input[type=text]:not(.browser-def
     padding: 5px;
     font-size: 16px;
 }
-#singAlongControls{
-    display: none;
-}
 #song-slide-out{
     max-height: 100vh;
     overflow-y: auto;
@@ -390,6 +387,7 @@ input:not([type]):focus:not([readonly])+label, input[type=text]:not(.browser-def
     background: white; /* Ensure it doesn't blend with the content */
     width: 100%;
     z-index: 1; /* Ensure it stays above other content */
+    display: none;
 }
 #navbarSongs{
     overflow-y: scroll;
