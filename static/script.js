@@ -836,6 +836,7 @@ class SingAlong {
     }
 
     init() {
+        document.getElementById('singAlongControls').style.display = "none";
         document.getElementById('createSingAlongButton').addEventListener('click', () => this.showCreateSingAlongModal());
         document.getElementById('joinSingAlongButton').addEventListener('click', () => this.showJoinSingAlongModal());
         document.getElementById('leaveSingAlongButton').addEventListener('click', () => this.leaveSingAlong());

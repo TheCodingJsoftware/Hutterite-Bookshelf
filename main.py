@@ -13,7 +13,7 @@ env = jinja2.Environment(loader=loader)
 
 sing_alongs: dict[str, dict[str, list[tornado.websocket.WebSocketHandler] | set[str]]] = {}
 INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
-VERSION = '1.0.2'
+VERSION = '1.0.3'
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
