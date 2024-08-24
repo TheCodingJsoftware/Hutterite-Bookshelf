@@ -1,2 +1,9 @@
 .venv
 .vscode
+dist/
+dist/js/
+node_modules/
+venv
+__pycache__
+generate.py
+package-lock.json

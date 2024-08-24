@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" href="/static/favicon.png">
+    <title>Hutterite Bookshelf</title>
+    <meta name="google" content="notranslate">
+</head>
+<header>
+    <nav>
+        <button class="circle transparent">
+            <i>menu</i>
+        </button>
+        <h5 class="max center-align">Title</h5>
+        <button class="circle transparent">
+            <img class="responsive" src="/static/favicon.png">
+        </button>
+    </nav>
+</header>
+
+<body class="dark">
+    <main class="responsive">
+        <div class="tabs">
+            <a class="active" data-ui="#songs">Songs</a>
+            <a data-ui="#current-song">Current Song</a>
+            <a data-ui="#sing-along-song">Sing-Along Song</a>
+        </div>
+        <div class="page active" id="songs">
+            <h5>Songs</h5>
+            <div id="file-list"></div>
+        </div>
+        <div class="page" id="current-song">
+            <h5>Current Song</h5>
+            <div id="file-content">Select a file to view its contents</div>
+        </div>
+        <div class="page" id="sing-along-song">
+            <h5>Sing-Along Song</h5>
+        </div>
+    </main>
+    <script src="dist/js/index.bundle.js"></script>
+    <link rel="stylesheet" href="static/css/theme.css">
+</body>
+
+</html>
