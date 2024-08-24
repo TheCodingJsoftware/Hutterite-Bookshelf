@@ -7,7 +7,7 @@ module.exports = {
     index:'./src/index.ts',
   },
   output: {
-    filename: '[name].[contenthash].js',
+    filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'dist/js'),
   },
   module: {
@@ -19,7 +19,7 @@ module.exports = {
       },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader'], // Add this rule for CSS files
+        use: ['style-loader', 'css-loader'],
       },
     ],
   },
