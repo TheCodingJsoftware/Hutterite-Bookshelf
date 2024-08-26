@@ -1,14 +1,14 @@
 {
     "compilerOptions": {
-      "module": "ESNext",
-      "target": "ES6",
-      "moduleResolution": "node",
-      "outDir": "./dist",
-      "esModuleInterop": true,
-      "allowSyntheticDefaultImports": true,
-      "strict": true,
-      "sourceMap": true
+        "module": "ESNext",
+        "target": "ES6",
+        "moduleResolution": "node",
+        "outDir": "./dist",
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "sourceMap": true
     },
-    "include": ["./src/**/*", "static/service-worker.js", "static/index.js"],
+    "include": ["./src/**/*", "static/service-worker.js"],
     "exclude": ["./dist"]
-  }
+}

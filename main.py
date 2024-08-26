@@ -13,8 +13,9 @@ import tornado.web
 import tornado.websocket
 from tornado.options import define, options
 
-loader = jinja2.FileSystemLoader("templates")
+loader = jinja2.FileSystemLoader("dist")
 env = jinja2.Environment(loader=loader)
+
 sing_alongs: dict[str, dict[str, list[tornado.websocket.WebSocketHandler] | set[str]]] = {}
 INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
 VERSION = '1.0.0'
@@ -246,9 +247,9 @@ def make_app():
             (r"/public_sing_alongs", PublicSingAlongsHandler),
         ],
         static_path=os.path.join(os.path.dirname(__file__), "static"),
-        template_path=os.path.join(os.path.dirname(__file__), "templates"),
         compress_response=True,
     )
+
 
 def check_inactive_sessions():
     now = datetime.now()

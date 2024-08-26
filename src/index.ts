@@ -531,13 +531,13 @@ async function hashChanged() {
                     songsNav.style.display = 'none';
                     singAlongNav.style.display = 'none';
                 }
-            } else if (hash === '#songs') {
+            } else if (hash === '#home') {
                 if (songsNav) {
                     songNav.style.display = 'none';
                     songsNav.style.display = 'block';
                     singAlongNav.style.display = 'none';
                 }
-            } else if (hash === '#sing-along') {
+            } else if (hash === '#sing-along-page') {
                 if (singAlongNav) {
                     songNav.style.display = 'none';
                     songsNav.style.display = 'none';
@@ -620,13 +620,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     songsNav.style.display = 'none';
                     singAlongNav.style.display = 'none';
                 }
-            } else if (targetPageId === '#songs') {
+            } else if (targetPageId === '#home') {
                 if (songsNav) {
                     songNav.style.display = 'none';
                     songsNav.style.display = 'block';
                     singAlongNav.style.display = 'none';
                 }
-            } else if (targetPageId === '#sing-along') {
+            } else if (targetPageId === '#sing-along-page') {
                 if (singAlongNav) {
                     songNav.style.display = 'none';
                     songsNav.style.display = 'none';
@@ -642,7 +642,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateFontSize(newSize);
     });
     document.querySelector('#text_decrease')?.addEventListener('click', () => {
-        const newSize = Math.max(getFontSize() - 1, 10); // Prevent the font size from going too small
+        const newSize = Math.max(getFontSize() - 1, 10);
         updateFontSize(newSize);
     });
     document.querySelector('#center_focus_strong')?.addEventListener('click', toggleFocus);
