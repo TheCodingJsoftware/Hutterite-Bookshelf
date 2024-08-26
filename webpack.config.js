@@ -26,12 +26,16 @@ module.exports = {
   mode: 'production',
   optimization: {
       minimize: true,
+      runtimeChunk: 'single',
+      splitChunks: {
+        chunks: 'all',
+      },
   },
   resolve: {
     extensions: ['.ts', '.js'],
   },
   plugins: [
-    // new BundleAnalyzerPlugin(),
+    new BundleAnalyzerPlugin(),
     new MiniCssExtractPlugin({
         filename: '[name].[contenthash].css',
     }),

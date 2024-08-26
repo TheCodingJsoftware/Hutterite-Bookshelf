@@ -6,42 +6,135 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="icon" href="/static/favicon.png">
-    <title>Hutterite Bookshelf</title>
     <meta name="google" content="notranslate">
+    <meta name="description" content="Your onload personal Hutterite bookshelf.">
+    <title>Hutterite Bookshelf</title>
+    <script src="dist/js/index.bundle.js"></script>
 </head>
-<header>
-    <nav>
+
+<header class="fixed no-padding">
+    <nav class="primary left-padding right-padding">
         <button class="circle transparent">
-            <i>menu</i>
+            <img class="responsive" fetchpriority="low" loading="lazy" src="/static/favicon.png" alt="logo" width="32" height="32">
         </button>
-        <h5 class="max center-align">Title</h5>
+        <h5 class="max center-align small">Hutterite Bookshelf</h5>
         <button class="circle transparent">
-            <img class="responsive" src="/static/favicon.png">
+            <i>more_vert</i>
+            <menu class="no-wrap left">
+                <a class="row" id="text_increase">
+                    <i>text_increase</i>
+                    <span>Increase</span>
+                </a>
+                <a class="row" id="text_decrease">
+                    <i>text_decrease</i>
+                    <span>Decrease</span>
+                </a>
+                <a class="row" id="toggle_theme">
+                    <i></i>
+                    <span>Toggle Theme</span>
+                </a>
+            </menu>
         </button>
     </nav>
+    <div class="tabs scroll no-margin no-padding" id="tabs">
+        <a class="active" data-ui="#songs">
+            <i class="ri-home-5-line"></i>
+            <span>Home</span>
+        </a>
+        <a data-ui="#song">
+            <i class="ri-file-list-line"></i>
+            <span>Song Page</span>
+        </a>
+        <a data-ui="#sing-along-page">
+            <i class="ri-user-voice-line"></i>
+            <span>Sing-Along</span>
+        </a>
+    </div>
 </header>
 
-<body class="dark">
+<body>
     <main class="responsive">
-        <div class="tabs">
-            <a class="active" data-ui="#songs">Songs</a>
-            <a data-ui="#current-song">Current Song</a>
-            <a data-ui="#sing-along-song">Sing-Along Song</a>
-        </div>
         <div class="page active" id="songs">
-            <h5>Songs</h5>
-            <div id="file-list"></div>
+            <div class="field label prefix border margin">
+                <i>search</i>
+                <input type="text" id="search-songs-input">
+                <label>Search songs</label>
+            </div>
+            <div class="row center-align">
+                <progress class="circle large" id="song-progress-bar"></progress>
+            </div>
+            <div class="padding" id="file-list"></div>
         </div>
-        <div class="page" id="current-song">
-            <h5>Current Song</h5>
-            <div id="file-content">Select a file to view its contents</div>
+        <div class="page" id="song">
+            <div class="field label prefix border margin">
+                <i>search</i>
+                <input type="text" id="search-song-content-input">
+                <label>Search song</label>
+                <span class="helper"></span>
+            </div>
+            <h5 id="file-name-header" class="padding"></h5>
+            <div id="file-content" class="padding scroll">Select a song from the home page</div>
         </div>
-        <div class="page" id="sing-along-song">
-            <h5>Sing-Along Song</h5>
+        <div class="page" id="sing-along-page">
+            <div class="padding center-align middle-align transparent">
+                <button class="small-round" id="sing-along-join">
+                    <i>adaptive_audio_mic</i>
+                    <span>Join a Sing-Along</span>
+                </button>
+            </div>
         </div>
     </main>
-    <script src="dist/js/index.bundle.js"></script>
-    <link rel="stylesheet" href="static/css/theme.css">
 </body>
+
+<footer class="fixed" id="song-nav" style="display: none;">
+    <nav class="bottom">
+        <button class="circle transparent" id="arrow_upward">
+            <i>arrow_upward</i>
+        </button>
+        <button class="circle transparent" id="center_focus_strong">
+            <i>center_focus_strong</i>
+        </button>
+        <button class="circle transparent" id="arrow_downward">
+            <i>arrow_downward</i>
+        </button>
+        <div class="max"></div>
+        <button class="circle transparent" id="arrow_back">
+            <i>arrow_back</i>
+        </button>
+        <button class="circle transparent" id="arrow_forward">
+            <i>arrow_forward</i>
+        </button>
+    </nav>
+</footer>
+
+<footer class="fixed" id="songs-nav" style="display: none;">
+    <nav class="bottom">
+        <button class="circle transparent">
+            <i>check_box</i>
+        </button>
+        <button class="circle transparent">
+            <i>mic</i>
+        </button>
+        <div class="max"></div>
+        <button class="square round extra">
+            <i>add</i>
+        </button>
+    </nav>
+</footer>
+
+<footer class="fixed" id="sing-along-nav" style="display: none;">
+    <nav class="bottom">
+        <button class="circle transparent">
+            <i>sync</i>
+        </button>
+        <button class="circle transparent">
+            <i>mic</i>
+        </button>
+        <div class="max"></div>
+        <button class="square round extra">
+            <i>add</i>
+        </button>
+    </nav>
+</footer>
 
 </html>

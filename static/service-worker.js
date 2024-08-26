@@ -1,8 +1,9 @@
 const CACHE_NAME = 'my-cache-v1';
 const urlsToCache = [
     '/',
-    '/static/style.css',
-    '/static/theme.css',
+    '/static/favicon.png',
+    '/static/css/theme.css',
+    '/static/css/theme.css',
     '/static/service-worker.js',
     '/dist/js/index.bundle.js',
 ];
@@ -10,14 +11,21 @@ const urlsToCache = [
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(urlsToCache);
+            return Promise.all(
+                urlsToCache.map(url => {
+                    return cache.add(url).catch(error => {
+                        console.error('Failed to cache:', url, error);
+                    });
+                })
+            );
         }).then(() => {
             return self.skipWaiting();
         }).catch(error => {
-            console.error('Failed to cache:', error);
+            console.error('Failed to cache resources:', error);
         })
     );
 });
+
 
 
 self.addEventListener('fetch', event => {

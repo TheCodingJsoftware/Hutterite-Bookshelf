@@ -9,6 +9,6 @@
       "strict": true,
       "sourceMap": true
     },
-    "include": ["./src/**/*", "static/service-worker.js"],
+    "include": ["./src/**/*", "static/service-worker.js", "static/index.js"],
     "exclude": ["./dist"]
   }

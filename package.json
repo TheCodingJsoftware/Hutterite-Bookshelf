@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "beercss": "^3.6.13",
-    "mini-css-extract-plugin": "^2.9.1"
+    "mini-css-extract-plugin": "^2.9.1",
+    "remixicon": "^4.3.0"
   },
   "devDependencies": {
     "copy-webpack-plugin": "^12.0.2",
@@ -19,7 +20,8 @@
   "version": "1.0.0",
   "main": "webpack.config.js",
   "scripts": {
-    "run": "python main.py"
+    "run": "python main.py",
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
