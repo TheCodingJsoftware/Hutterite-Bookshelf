@@ -657,6 +657,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const songNav = document.getElementById('song-nav') as HTMLElement;
     const songsNav = document.getElementById('home-nav') as HTMLElement;
     const singAlongNav = document.getElementById('sing-along-nav') as HTMLElement;
+    const selectSongsToggle = document.getElementById('select-songs-toggle') as HTMLInputElement;
+    const clearSelectionButton = document.getElementById('clear-selection') as HTMLButtonElement;
+    clearSelectionButton.style.display = 'none';
 
     const currentHash = window.location.hash;
 
@@ -729,20 +732,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         const isPrivate = checkBoxInput.checked;
         const folderName = folderInput.value.trim();
     });
-    const selectSongsToggle = document.getElementById('select-songs-toggle') as HTMLInputElement;
     selectSongsToggle.addEventListener('change', async () => {
         isSelectableMode = selectSongsToggle.checked;
+        if (isSelectableMode) {
+            clearSelectionButton.style.display = 'block';
+        } else {
+            clearSelectionButton.style.display = 'none';
+        }
         const fileItems = document.querySelectorAll('.file-item');
-        fileItems.forEach(item => {
+        fileItems.forEach(fileButton => {
+            const fileName = fileButton.getAttribute('data-file-name');
             if (isSelectableMode) {
-                item.classList.add('selectable');
+                fileButton.classList.add('selectable');
+                if (fileName && selectedFiles.has(fileName)) {
+                    fileButton.classList.add('selected');
+                }
             } else {
-                item.classList.remove('selectable');
-                item.classList.remove('selected');
+                fileButton.classList.remove('selectable');
+                fileButton.classList.remove('selected');
             }
         });
     });
-    document.getElementById('clear-selection')?.addEventListener('click', async () => {
+    clearSelectionButton.addEventListener('click', async () => {
         selectedFiles.clear();
         updateFileSelectionVisuals();
     });
@@ -828,6 +839,7 @@ async function init() {
         console.error("Error during initialization:", error);
     }
 }
+
 async function initializeUIAndStartApp() {
     try {
         let savedMode = localStorage.getItem("mode") || "dark";
@@ -838,5 +850,6 @@ async function initializeUIAndStartApp() {
         console.error("Error during UI initialization:", error);
     }
 }
+
 window.addEventListener('load', initializeUIAndStartApp);
 window.addEventListener('popstate', hashChanged);
