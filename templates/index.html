@@ -13,8 +13,8 @@
 
 <header class="fixed no-padding">
     <nav class="primary left-padding right-padding">
-        <button class="circle transparent">
-            <img class="responsive" fetchpriority="low" loading="lazy" src="/static/favicon.png" alt="logo" width="32" height="32">
+        <button class="circle transparent" id="nav-bar-open">
+            <img class="responsive" fetchpriority="low" loading="lazy" src="/static/favicon.png" alt="" width="32" height="32">
         </button>
         <h5 class="max center-align small">Hutterite Bookshelf</h5>
         <button class="circle transparent">
@@ -51,23 +51,70 @@
     </div>
 </header>
 
+<div class="overlay blur"></div>
+<dialog class="left" id="nav-bar">
+    <div class="row max center-align">
+        <img class="responsive round border center-align row max" style="max-width: 150px; height: auto;" fetchpriority="low" loading="lazy" src="/static/icon.png" alt="" width="128" height="128">
+    </div>
+    <div class="padding">
+        <h5 class="small center-align">Hutterite Bookshelf</h5>
+        <p class="small">Your own personal Hutterite bookshelf.</p>
+        <p class="center-align">Developed by <a class="link" href="https://thecodingjsoftware.github.io/">TheCodingJ's</a></p>
+        <p class="center-align">© 2024 TheCodingJ'software</p>
+    </div>
+    <article class="border" style="margin-top: auto;">
+        <p class="small center-align">
+            For questions, comments, suggestions, <br>
+            or concerns about this service please <br>
+            email: <a class="link" href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a>.
+        </p>
+    </article>
+    <nav class="right-align no-space">
+        <button class="transparent link small-round" id="nav-bar-close">Close</button>
+    </nav>
+</dialog>
+
+<div class="overlay blur"></div>
+<dialog class="bottom" id="add-song-dialog">
+    <h5 class="small center-align">Create Folder</h5>
+    <div class="field label prefix border">
+        <i>folder</i>
+        <input type="text" id="folder-name-input" autocomplete="off">
+        <label>Folder Name</label>
+        <span class="helper">To add sub-folders use a forward slash (/) to separate the folder names.</span>
+    </div>
+    <br>
+    <label class="checkbox">
+        <input type="checkbox" id="folder-is-private-checkbox" autocomplete="off">
+        <span>Is Private</span>
+    </label>
+    <nav class="right-align">
+        <button class="small-round" id="add-group-dialog-submit">
+            <i>add</i>
+            <span>Create Folder</span>
+        </button>
+    </nav>
+</dialog>
 <body>
     <main class="responsive">
         <div class="page active" id="home">
-            <div class="field label prefix border margin">
+            <div class="field label prefix border margin" id="search-songs">
                 <i>search</i>
-                <input type="text" id="search-songs-input">
+                <input type="text" id="search-songs-input" autocomplete="off">
                 <label>Search songs</label>
+                <span class="helper"></span>
             </div>
             <div class="row center-align">
-                <progress class="circle large" id="song-progress-bar"></progress>
+                <progress class="circle large" id="song-progress-bar">
+                    <span>Loading...</span>
+                </progress>
             </div>
             <div class="padding" id="file-list"></div>
         </div>
         <div class="page" id="song">
-            <div class="field label prefix border margin">
+            <div class="field label prefix border margin" id="search-song">
                 <i>search</i>
-                <input type="text" id="search-song-content-input">
+                <input type="text" id="search-song-content-input" autocomplete="off">
                 <label>Search song</label>
                 <span class="helper"></span>
             </div>
@@ -85,53 +132,60 @@
     </main>
 </body>
 
-<footer class="fixed" id="song-nav" style="display: none;">
+
+<footer class="fixed" id="home-nav">
     <nav class="bottom">
-        <button class="circle transparent" id="arrow_upward">
-            <i>arrow_upward</i>
-        </button>
-        <button class="circle transparent" id="center_focus_strong">
-            <i>center_focus_strong</i>
-        </button>
-        <button class="circle transparent" id="arrow_downward">
-            <i>arrow_downward</i>
+        <div class="middle-align"></div>
+            <label class="checkbox">
+                <input type="checkbox" id="select-songs-toggle" autocomplete="off">
+                <span>Select Songs</span>
+            </label>
+            <span class="helper">Helper text</span>
+        </div>
+        <button class="circle transparent" id="clear-selection">
+            <i>delete_forever</i>
         </button>
         <div class="max"></div>
-        <button class="circle transparent" id="arrow_back">
-            <i>arrow_back</i>
-        </button>
-        <button class="circle transparent" id="arrow_forward">
-            <i>arrow_forward</i>
+        <button class="square round extra" id="add-group">
+            <i>add</i>
         </button>
     </nav>
 </footer>
 
-<footer class="fixed" id="songs-nav" style="display: none;">
+<footer class="fixed" id="song-nav" style="display: none;">
     <nav class="bottom">
-        <button class="circle transparent">
-            <i>check_box</i>
+        <button class="circle transparent" id="previous-paragraph">
+            <i>arrow_upward</i>
         </button>
-        <button class="circle transparent">
-            <i>mic</i>
+
+        <label class="checkbox icon">
+            <input type="checkbox" id="paragraph-focus" autocomplete="off">
+            <span>
+                <i>visibility_off</i>
+                <i>visibility</i>
+            </span>
+        </label>
+        <button class="circle transparent" id="next-paragraph">
+            <i>arrow_downward</i>
         </button>
         <div class="max"></div>
-        <button class="square round extra">
-            <i>add</i>
+        <button class="circle transparent" id="previous-song">
+            <i>arrow_left</i>
+        </button>
+        <button class="circle transparent" id="next-song">
+            <i>arrow_right</i>
         </button>
     </nav>
 </footer>
 
 <footer class="fixed" id="sing-along-nav" style="display: none;">
     <nav class="bottom">
-        <button class="circle transparent">
-            <i>sync</i>
-        </button>
-        <button class="circle transparent">
-            <i>mic</i>
+        <button class="circle transparent" id="sing-along-logout">
+            <i>logout</i>
         </button>
         <div class="max"></div>
-        <button class="square round extra">
-            <i>add</i>
+        <button class="square round extra" id="sing-along-sync">
+            <i>sync</i>
         </button>
     </nav>
 </footer>

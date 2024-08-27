@@ -9,12 +9,17 @@ interface FileData {
     relativePath: string;
     fileContent: string;
 }
+let selectedFiles = new Set<string>();
 let indexDBFiles: FileData[] = []
 let currentParagraphIndex = 0;
 let focusEnabled = false;
 let flattenedFileList: FileData[] = [];
 let currentSongIndex = -1;
 let debounceTimer: number | null = null; // For filtering songs
+let isSelectableMode = false;
+const LONG_PRESS_DURATION = 500; // Duration in milliseconds to consider a long press
+let longPressTimer: number | null = null;
+
 
 function escapeRegExp(string: string): string {
     return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
@@ -105,17 +110,90 @@ function flattenFileTree(tree: any, basePath: string = '') {
 }
 
 async function filterSongs(query: string, db: IDBDatabase) {
+    const helperText = document.querySelector('#search-songs .helper') as HTMLElement;
+
     if (query === '') {
         renderFileList(indexDBFiles, db);
+        helperText.textContent = ''; // Clear the helper text when there's no query
         return;
     }
     const filteredFiles: FileData[] = indexDBFiles.filter(file =>
         file.fileName.toLowerCase().includes(query.toLowerCase())
     );
 
+    helperText.textContent = `${filteredFiles.length} result${filteredFiles.length !== 1 ? 's' : ''} found`;
+
     renderFilteredFileList(filteredFiles, db, query);
 }
 
+async function updateFileSelectionVisuals() {
+    const fileItems = document.querySelectorAll('.file-item');
+    fileItems.forEach(item => {
+        const fileName = item.getAttribute('data-file-name');
+        if (isSelectableMode) {
+            item.classList.add('selectable');
+        } else {
+            item.classList.remove('selectable');
+        }
+
+        if (fileName && selectedFiles.has(fileName)) {
+            item.classList.add('selected');
+        } else {
+            item.classList.remove('selected');
+        }
+    });
+}
+
+function getFileButton(file: FileData, db: IDBDatabase, showText: boolean = true): HTMLElement {
+    const fileButton = document.createElement('a');
+    fileButton.className = 'file-item padding surface-container no-round wave wrap';
+    if (showText) {
+        fileButton.textContent = file.fileName.replace('.txt', '');
+    }
+    fileButton.setAttribute('data-file-name', file.fileName);
+
+    if (selectedFiles.has(file.fileName)) {
+        fileButton.classList.add('selected');
+    }
+
+    fileButton.addEventListener('mousedown', () => {
+        longPressTimer = window.setTimeout(() => {
+            const selectSongsToggle = document.getElementById('select-songs-toggle') as HTMLInputElement;
+            selectSongsToggle.checked = !selectSongsToggle.checked;
+            const event = new Event('change');
+            selectSongsToggle.dispatchEvent(event);
+        }, LONG_PRESS_DURATION);
+    });
+
+    fileButton.addEventListener('mouseup', () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    });
+
+    fileButton.addEventListener('mouseleave', () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    });
+
+    fileButton.addEventListener('click', (event) => {
+        if (isSelectableMode) {
+            event.preventDefault();
+            fileButton.classList.toggle('selected');
+            if (fileButton.classList.contains('selected')) {
+                selectedFiles.add(file.fileName);
+            } else {
+                selectedFiles.delete(file.fileName);
+            }
+        } else {
+            displayFileContent(file.fileName, db);
+        }
+    });
+    return fileButton;
+}
 
 async function renderFilteredFileList(files: FileData[], db: IDBDatabase, query: string) {
     const fileListDiv = document.getElementById('file-list') as HTMLDivElement;
@@ -134,11 +212,8 @@ async function renderFilteredFileList(files: FileData[], db: IDBDatabase, query:
     const fragment = document.createDocumentFragment();
 
     files.forEach(file => {
-        const fileButton = document.createElement('a');
+        const fileButton = getFileButton(file, db, false);
         fileButton.className = 'padding wave file-item wrap no-round';
-        fileButton.setAttribute('data-file-name', file.fileName);
-        fileButton.addEventListener('click', () => displayFileContent(file.fileName, db));
-
         const textContainer = document.createElement('div');
         textContainer.className = 'max';
 
@@ -166,6 +241,7 @@ async function renderFilteredFileList(files: FileData[], db: IDBDatabase, query:
 
     content.appendChild(fragment);
     fileListDiv.appendChild(content);
+    updateFileSelectionVisuals();
 }
 
 async function renderFileList(files: FileData[], db: IDBDatabase) {
@@ -224,7 +300,6 @@ async function renderFileList(files: FileData[], db: IDBDatabase) {
                 }
             });
 
-
             const summary = document.createElement('summary');
             summary.className = 'none no-padding fill';
 
@@ -259,13 +334,8 @@ async function renderFileList(files: FileData[], db: IDBDatabase) {
                         fileArticle.style.marginTop = '0px';
 
                         value.forEach((file: FileData) => {
-                            const fileButton = document.createElement('a');
-                            fileButton.className = 'file-item padding surface-container no-round wave wrap';
-                            fileButton.textContent = file.fileName.replace('.txt', '');
-                            fileButton.setAttribute('data-file-name', file.fileName);
-                            fileButton.addEventListener('click', () => displayFileContent(file.fileName, db));
+                            const fileButton = getFileButton(file, db);
                             fileArticle.appendChild(fileButton);
-
                             const divider = document.createElement('div');
                             divider.className = 'divider';
                             fileArticle.appendChild(divider);
@@ -276,11 +346,10 @@ async function renderFileList(files: FileData[], db: IDBDatabase) {
                         lazyLoadContainer.appendChild(createFileTree(value, depth + 1));
                     }
                 }
+                updateFileSelectionVisuals();
             });
-
             fragment.appendChild(details);
         });
-
         return fragment;
     };
 
@@ -349,7 +418,7 @@ async function displayFileContent(fileName: string, db: IDBDatabase, updateUrl: 
 
             window.scrollTo({ top: 0, behavior: 'instant' });
             const songNav = document.getElementById('song-nav') as HTMLElement;
-            const songsNav = document.getElementById('songs-nav') as HTMLElement;
+            const songsNav = document.getElementById('home-nav') as HTMLElement;
 
             songNav.style.display = 'block';
             songsNav.style.display = 'none';
@@ -468,7 +537,7 @@ function searchSongContents() {
     const inputBox = document.getElementById('search-song-content-input') as HTMLInputElement;
     const query = inputBox.value.trim();
     const fileContentDiv = document.getElementById('file-content') as HTMLDivElement;
-    const helperSpan = document.querySelector('.helper') as HTMLElement;
+    const helperSpan = document.querySelector('#search-song .helper') as HTMLElement;
 
     const paragraphs = fileContentDiv.querySelectorAll('p');
     let totalMatches = 0;
@@ -506,7 +575,7 @@ async function hashChanged() {
     const tabs = document.querySelectorAll('.tabs a');
     const pages = document.querySelectorAll('.page');
     const songNav = document.getElementById('song-nav') as HTMLElement;
-    const songsNav = document.getElementById('songs-nav') as HTMLElement;
+    const songsNav = document.getElementById('home-nav') as HTMLElement;
     const singAlongNav = document.getElementById('sing-along-nav') as HTMLElement;
     const urlParams = new URLSearchParams(window.location.search);
     const song = urlParams.get('song');
@@ -586,7 +655,7 @@ async function toggleTheme() {
 document.addEventListener('DOMContentLoaded', async () => {
     const tabs = document.querySelectorAll('.tabs a');
     const songNav = document.getElementById('song-nav') as HTMLElement;
-    const songsNav = document.getElementById('songs-nav') as HTMLElement;
+    const songsNav = document.getElementById('home-nav') as HTMLElement;
     const singAlongNav = document.getElementById('sing-along-nav') as HTMLElement;
 
     const currentHash = window.location.hash;
@@ -645,12 +714,44 @@ document.addEventListener('DOMContentLoaded', async () => {
         const newSize = Math.max(getFontSize() - 1, 10);
         updateFontSize(newSize);
     });
-    document.querySelector('#center_focus_strong')?.addEventListener('click', toggleFocus);
-    document.querySelector('#arrow_upward')?.addEventListener('click', moveToPreviousParagraph);
-    document.querySelector('#arrow_downward')?.addEventListener('click', moveToNextParagraph);
+    document.querySelector('#nav-bar-open')?.addEventListener('click', () => {
+        ui('#nav-bar');
+    });
+    document.querySelector('#nav-bar-close')?.addEventListener('click', () => {
+        ui('#nav-bar');
+    });
+    document.querySelector('#add-group')?.addEventListener('click', () => {
+        ui('#add-song-dialog');
+    });
+    document.querySelector('#add-group-dialog-submit')?.addEventListener('click', async () => {
+        const folderInput = document.getElementById('folder-name-input') as HTMLInputElement;
+        const checkBoxInput = document.getElementById('folder-is-private-checkbox') as HTMLInputElement;
+        const isPrivate = checkBoxInput.checked;
+        const folderName = folderInput.value.trim();
+    });
+    const selectSongsToggle = document.getElementById('select-songs-toggle') as HTMLInputElement;
+    selectSongsToggle.addEventListener('change', async () => {
+        isSelectableMode = selectSongsToggle.checked;
+        const fileItems = document.querySelectorAll('.file-item');
+        fileItems.forEach(item => {
+            if (isSelectableMode) {
+                item.classList.add('selectable');
+            } else {
+                item.classList.remove('selectable');
+                item.classList.remove('selected');
+            }
+        });
+    });
+    document.getElementById('clear-selection')?.addEventListener('click', async () => {
+        selectedFiles.clear();
+        updateFileSelectionVisuals();
+    });
+    document.querySelector('#paragraph-focus')?.addEventListener('click', toggleFocus);
+    document.querySelector('#previous-paragraph')?.addEventListener('click', moveToPreviousParagraph);
+    document.querySelector('#next-paragraph')?.addEventListener('click', moveToNextParagraph);
     document.querySelector('#toggle_theme')?.addEventListener('click', toggleTheme);
-    document.querySelector('#arrow_back')?.addEventListener('click', moveToPreviousSong);
-    document.querySelector('#arrow_forward')?.addEventListener('click', moveToNextSong);
+    document.querySelector('#previous-song')?.addEventListener('click', moveToPreviousSong);
+    document.querySelector('#next-song')?.addEventListener('click', moveToNextSong);
     document.querySelector('#song')?.addEventListener('dblclick', (event) => {
         const mouseEvent = event as MouseEvent; // Explicitly cast the event to MouseEvent
         const songsPage = mouseEvent.currentTarget as HTMLElement;

@@ -22,11 +22,13 @@ VERSION = '1.0.0'
 
 define("port", default=5052, help="run on the given port", type=int)
 
-with open("credentials.json") as f:
-    credentials = json.load(f)
-    POSTGRES_USER = credentials["POSTGRES_USER"]
-    POSTGRES_PASSWORD = credentials["POSTGRES_PASSWORD"]
-    POSTGRES_DB = credentials["POSTGRES_DB"]
+with open("POSTGRES.json") as f:
+    data = json.load(f)
+    POSTGRES_USER = data["POSTGRES_USER"]
+    POSTGRES_PASSWORD = data["POSTGRES_PASSWORD"]
+    POSTGRES_DB = data["POSTGRES_DB"]
+    POSTGRES_HOST = data["POSTGRES_HOST"]
+    POSTGRES_PORT = data["POSTGRES_PORT"]
 
 
 class SingAlong:
@@ -58,8 +60,8 @@ def connect_db():
         dbname=POSTGRES_DB,
         user=POSTGRES_USER,
         password=POSTGRES_PASSWORD,
-        host="10.0.0.10",
-        port="5434",
+        host=POSTGRES_HOST,
+        port=POSTGRES_PORT,
     )
 
 
@@ -89,7 +91,7 @@ class FileHandler(tornado.web.RequestHandler):
             for table in tables:
                 table_name = f'"{table[0]}"'
                 cursor.execute(
-                    f"SELECT file_name, relative_path, file_content FROM {table_name};"
+                    f"SELECT file_name, relative_path, file_content, is_private FROM {table_name};"
                 )
                 for record in cursor.fetchall():
                     files.append(
@@ -97,6 +99,7 @@ class FileHandler(tornado.web.RequestHandler):
                             "fileName": record[0],
                             "relativePath": record[1],
                             "fileContent": record[2],
+                            "isPrivate": record[3],
                         }
                     )
         conn.close()
@@ -115,6 +118,78 @@ class FileHandler(tornado.web.RequestHandler):
 
         self.write(compressed_data)
 
+    @tornado.gen.coroutine
+    def post(self):
+        data = json.loads(self.request.body)
+        action = data.get("action")
+
+        if action == "create_folder":
+            folder_name = data.get("folder_name")
+            is_private = data.get("is_private", False)
+            result = self.create_folder(folder_name, is_private)
+            if result:
+                self.write({"status": "success", "message": "Folder created successfully"})
+            else:
+                self.set_status(400)
+                self.write({"status": "error", "message": "Folder creation failed"})
+
+        elif action == "add_file":
+            file_name = data.get("file_name")
+            folder_path = data.get("folder_path")
+            file_content = data.get("file_content")
+            is_private = data.get("is_private", False)
+            result = self.add_file(file_name, folder_path, file_content, is_private)
+            if result:
+                self.write({"status": "success", "message": "File added successfully"})
+            else:
+                self.set_status(400)
+                self.write({"status": "error", "message": "File addition failed"})
+
+    def folder_exists(self, db_conn, folder_path):
+        with db_conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM custom_content WHERE full_path = %s AND is_folder = TRUE", (folder_path,))
+            return cursor.fetchone() is not None
+
+    def create_folder(self, folder_name, is_private):
+        conn = connect_db()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO custom_content (file_name, full_path, is_folder, is_private) VALUES (%s, %s, TRUE, %s) RETURNING id",
+                    (folder_name, folder_name, is_private)
+                )
+                conn.commit()
+                return cursor.fetchone()[0]
+        except Exception as e:
+            print(f"Error creating folder: {e}")
+            return None
+        finally:
+            conn.close()
+
+    def add_file(self, file_name, folder_path, file_content, is_private):
+        conn = connect_db()
+        try:
+            with conn.cursor() as cursor:
+                # Get the parent folder ID
+                cursor.execute(
+                    "SELECT id FROM custom_content WHERE full_path = %s AND is_folder = TRUE", (folder_path,)
+                )
+                parent_folder_id = cursor.fetchone()
+                if not parent_folder_id:
+                    raise ValueError("Specified folder path does not exist")
+
+                cursor.execute(
+                    "INSERT INTO custom_content (file_name, full_path, file_content, is_folder, is_private, parent_folder_id) "
+                    "VALUES (%s, %s, %s, FALSE, %s, %s) RETURNING id",
+                    (file_name, os.path.join(folder_path, file_name), file_content, is_private, parent_folder_id[0])
+                )
+                conn.commit()
+                return cursor.fetchone()[0]
+        except Exception as e:
+            print(f"Error adding file: {e}")
+            return None
+        finally:
+            conn.close()
 
 
 class PublicSingAlongsHandler(tornado.web.RequestHandler):
@@ -242,6 +317,8 @@ def make_app():
             (r"/", MainHandler),
             (r"/dist/(.*)", tornado.web.StaticFileHandler, {"path": "dist"}),
             (r"/api/files", FileHandler),
+            (r"/api/create_folder", FileHandler),
+            (r"/api/add_file", FileHandler),
             (r"/ws", SingAlongWebSocket),
             (r"/version", VersionHandler),
             (r"/public_sing_alongs", PublicSingAlongsHandler),

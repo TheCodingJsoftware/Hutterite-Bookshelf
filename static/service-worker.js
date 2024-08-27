@@ -2,7 +2,7 @@ const CACHE_NAME = 'my-cache-v1';
 const urlsToCache = [
     '/',
     '/static/favicon.png',
-    '/static/css/theme.css',
+    '/static/css/style.css',
     '/static/css/theme.css',
     '/static/service-worker.js',
     '/dist/js/index.bundle.js',

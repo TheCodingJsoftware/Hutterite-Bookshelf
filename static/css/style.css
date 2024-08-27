@@ -19,6 +19,21 @@ header{
     user-select: none;
 }
 
+#nav-bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding: 16px;
+}
+.file-item.selectable {
+    cursor: pointer;
+}
+
+.file-item.selected {
+    background-color: var(--on-primary) !important;
+    color: var(--primary) !important;
+}
 ::selection {
     color: var(--on-primary);
     background-color: var(--primary);
