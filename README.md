@@ -43,24 +43,28 @@ Your own bookshelf of Hutterite songs.
 2. Install [Git](https://git-scm.com/downloads).
 3. Install [Python](https://www.python.org/downloads/).
 4. Clone the repository with
+
     ```bash
     git clone https://github.com/TheCodingJsoftware/Hutterite-Bookshelf.git
     ```
+
 5. Run `npm install` to install the dependencies.
 6. Setup a virtual environment with `python -m virtualenv venv`.
 7. Activate the virtual environment with `source venv/bin/activate` or run `venv\Scripts\activate.bat` on Windows.
 8. Install the dependencies with `pip install -r requirements.txt`.
 9. Run `npm run build` to build the app.
-10. Setup enviroment variables in whatever way you prefer.
-    ```bash
-    POSTGRES_USER="YOUR_POSTGRES_USER"
-    POSTGRES_PASSWORD="YOUR_POSTGRES_PASSWORD"
-    POSTGRES_DB="YOUR_POSTGRES_DB"
-    POSTGRES_HOST="YOUR_POSTGRES_HOST"
-    POSTGRES_PORT="YOUR_POSTGRES_PORT"
-    ```
-11. Run `python main.py` to start the app.
+10. Setup enviroment variables in the `.env` file:
 
+    ```bash
+    POSTGRES_USER=your_username
+    POSTGRES_PASSWORD=your_password
+    POSTGRES_DB=your_database
+    POSTGRES_HOST=localhost
+    POSTGRES_PORT=5432
+    MAX_POSTGRES_WORKERS=5
+    ```
+
+11. Run `python main.py` to start the app.
 
 ## Setup on Synology NAS
 
@@ -73,6 +77,7 @@ Ensure your Synology NAS has Docker installed. If not, install Docker from the S
 ### 2. **Build and Push Docker Image**
 
 #### Build the Docker Image Locally
+
 Make sure your `Dockerfile`, `requirements.txt`, and `app.py` are ready. Then, build the Docker image locally:
 
 ```bash
@@ -90,6 +95,7 @@ docker push your-docker-username/app-name
 ### 3. **Set Up Docker Container on Synology NAS**
 
 #### Pull Docker Image on Synology NAS (if pushed to Docker Hub)
+
 If you pushed the image to Docker Hub, pull it on your Synology NAS:
 
 1. Open Docker from the main menu.
@@ -97,6 +103,7 @@ If you pushed the image to Docker Hub, pull it on your Synology NAS:
 3. Download the image.
 
 #### Create and Run the Docker Container
+
 1. Go to the "Image" tab, find your image, and click "Launch" to create a new container.
 2. Configure the container settings:
    - **General Settings**: Set a container name.

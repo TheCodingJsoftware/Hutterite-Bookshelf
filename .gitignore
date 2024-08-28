@@ -8,3 +8,5 @@ __pycache__
 generate.py
 package-lock.json
 POSTGRES.json
+docker_build_push.bat
+.env

@@ -995,7 +995,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         await renderFileList(globalDBFiles, globalDB, customDBFiles, customDB);
 
-        showSuccessSnackbar('Collections added successfully.');
+        showSuccessSnackbar('Collections updated successfully.');
     });
 
     document.querySelector('#add-group')?.addEventListener('click', () => {
@@ -1174,6 +1174,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function init() {
     try {
+        if ('serviceWorker' in navigator) {
+            try {
+                navigator.serviceWorker.register('/serviceWorker.js', { scope: '/' })
+                console.log('ServiceWorker registration successful with scope: /');
+            } catch (error) {
+                console.log('ServiceWorker registration failed: ', error);
+            }
+        }
+
         const customFolders = getCustomFoldersFromLocalStorage();
         const [globalDB, customDB] = await Promise.all([
             initGlobalDB(),
@@ -1208,16 +1217,6 @@ async function init() {
             console.log("Updated indexedDB files from server.");
         } else if (globalDBFiles.length === 0) {
             console.log("No internet connection and no data in IndexedDB.");
-        }
-
-
-        if ('serviceWorker' in navigator) {
-            try {
-                const registration = await navigator.serviceWorker.register('/static/service-worker.js');
-                console.log('ServiceWorker registration successful with scope: ', registration.scope);
-            } catch (error) {
-                console.log('ServiceWorker registration failed: ', error);
-            }
         }
     } catch (error) {
         console.error("Error during initialization:", error);

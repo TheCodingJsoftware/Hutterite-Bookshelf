@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from typing import Literal, Union
 
+from dotenv import load_dotenv
 import jinja2
 import psycopg2
 from psycopg2 import sql
@@ -16,6 +17,8 @@ import tornado.websocket
 from tornado.options import define, options
 from tornado.concurrent import run_on_executor
 from concurrent.futures import ThreadPoolExecutor
+
+load_dotenv()
 
 loader = jinja2.FileSystemLoader("dist")
 env = jinja2.Environment(loader=loader)
@@ -87,13 +90,20 @@ class MainHandler(tornado.web.RequestHandler):
         self.write(rendered_template)
 
 
+class ServiceWorkerHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.set_header('Content-Type', 'application/javascript')
+        with open("serviceWorker.js", "r") as file:
+            self.write(file.read())
+
+
 class VersionHandler(tornado.web.RequestHandler):
     def get(self):
         self.write({"version": VERSION})
 
 
 class FileHandler(tornado.web.RequestHandler):
-    executor = ThreadPoolExecutor(max_workers=int(os.getenv("MAX_POSTGRES_WORKERS")), thread_name_prefix="postgres_worker")
+    executor = ThreadPoolExecutor(max_workers=int(os.getenv("MAX_POSTGRES_WORKERS", default=5)), thread_name_prefix="postgres_worker")
 
     @tornado.gen.coroutine
     def get(self):
@@ -318,6 +328,7 @@ def make_app():
     return tornado.web.Application(
         [
             (r"/", MainHandler),
+            (r"/serviceWorker.js", ServiceWorkerHandler),
             (r"/dist/(.*)", tornado.web.StaticFileHandler, {"path": "dist"}),
             (r"/api/files", FileHandler),
             (r"/api/public_folders", PublicFoldersHandler),
@@ -344,6 +355,6 @@ def check_inactive_sessions():
 if __name__ == "__main__":
     options.parse_command_line()
     app = tornado.httpserver.HTTPServer(make_app())
-    app.listen(os.getenv("PORT"))
+    app.listen(int(os.getenv("PORT", default=5052)))
     tornado.ioloop.PeriodicCallback(check_inactive_sessions, 60 * 60 * 1000).start()  # Check every hour
     tornado.ioloop.IOLoop.instance().start()
