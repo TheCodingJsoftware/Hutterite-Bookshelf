@@ -2,10 +2,10 @@ const CACHE_NAME = 'my-cache-v1';
 const urlsToCache = [
     '/',
     '/static/favicon.png',
-    '/static/css/style.css',
-    '/static/css/theme.css',
     '/static/service-worker.js',
-    '/dist/js/index.bundle.js',
+    '/dist/index.bundle.js',
+    '/dist/runtime.bundle.js',
+    '/dist/index.html',
 ];
 
 self.addEventListener('install', event => {

@@ -6,8 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="icon" href="/static/favicon.png">
-    <meta name="google" content="notranslate">
-    <meta name="description" content="Your own personal Hutterite bookshelf.">
+    <meta name="description" content="Your own bookshelf of Hutterite songs.">
     <title>Hutterite Bookshelf</title>
 </head>
 
@@ -20,17 +19,21 @@
         <button class="circle transparent">
             <i>more_vert</i>
             <menu class="no-wrap left">
-                <a class="row" id="text_increase">
+                <a class="row" id="text-increase">
                     <i>text_increase</i>
                     <span>Increase</span>
                 </a>
-                <a class="row" id="text_decrease">
+                <a class="row" id="text-decrease">
                     <i>text_decrease</i>
                     <span>Decrease</span>
                 </a>
-                <a class="row" id="toggle_theme">
+                <a class="row" id="toggle-theme">
                     <i></i>
                     <span>Toggle Theme</span>
+                </a>
+                <a class="row" id="toggle-collections">
+                    <i>book</i>
+                    <span>Collections</span>
                 </a>
             </menu>
         </button>
@@ -60,7 +63,6 @@
         <h5 class="small center-align">Hutterite Bookshelf</h5>
         <p class="small">Your own personal Hutterite bookshelf.</p>
         <p class="center-align">Developed by <a class="link" href="https://thecodingjsoftware.github.io/">TheCodingJ's</a></p>
-        <p class="center-align">© 2024 TheCodingJ'software</p>
     </div>
     <article class="border" style="margin-top: auto;">
         <p class="small center-align">
@@ -75,11 +77,11 @@
 </dialog>
 
 <div class="overlay blur"></div>
-<dialog class="bottom" id="add-song-dialog">
-    <h5 class="small center-align">Create Folder</h5>
+<dialog class="max" id="add-song-dialog">
+    <h5 class="small center-align">Add Songs</h5>
     <div class="field label prefix border">
-        <i>folder</i>
-        <input type="text" id="folder-name-input" autocomplete="off">
+        <i class="front">folder</i>
+        <input type="text" id="folder-name-input">
         <label>Folder Name</label>
         <span class="helper">To add sub-folders use a forward slash (/) to separate the folder names.</span>
     </div>
@@ -88,15 +90,44 @@
         <input type="checkbox" id="folder-is-private-checkbox" autocomplete="off">
         <span>Is Private</span>
     </label>
-    <nav class="right-align">
+    <br>
+    <div id="selected-songs-container">
+        <h5>Selected Songs</h5>
+        <article class="scroll medium padding" id="selected-songs-list">
+        </article>
+    </div>
+    <nav class="right-align transparent">
         <button class="small-round" id="add-group-dialog-submit">
             <i>add</i>
-            <span>Create Folder</span>
+            <span>Add Song</span>
+        </button>
+        <button class="transparent link small-round" id="add-group-dialog-close">
+            <span>Close</span>
         </button>
     </nav>
 </dialog>
+
+<div class="overlay blur"></div>
+<dialog class="right" id="custom-collections-dialog">
+    <h5 class="small center-align">Custom Collections</h5>
+    <div class="scroll" id="custom-folders-list">
+    </div>
+    <nav class="right-align transparent">
+        <button class="small-round" id="close-collections-dialog-apply">
+            <i>check</i>
+            <span>Apply</span>
+        </button>
+        <button class="transparent link small-round" id="close-collections-dialog-close">
+            <span>Close</span>
+        </button>
+    </nav>
+</dialog>
+
 <body>
     <main class="responsive">
+        <div class="snackbar primary top" id="success-snackbar"></div>
+        <div class="snackbar error" id="error-snackbar"></div>
+
         <div class="page active" id="home">
             <div class="field label prefix border margin" id="search-songs">
                 <i>search</i>
@@ -105,11 +136,16 @@
                 <span class="helper"></span>
             </div>
             <div class="row center-align">
-                <progress class="circle large" id="song-progress-bar">
-                    <span>Loading...</span>
-                </progress>
+                <div class="center-align" id="progress-bar-container">
+                    <progress class="circle large"></progress>
+                    <p>Loading...</p>
+                </div>
             </div>
             <div class="padding" id="file-list"></div>
+            <div id="custom-collections-container" style="display: none;">
+                <h5 class="small center-align">Custom Collections</h5>
+                <div class="padding" id="custom-collections-file-list"></div>
+            </div>
         </div>
         <div class="page" id="song">
             <div class="field label prefix border margin" id="search-song">
@@ -132,7 +168,6 @@
     </main>
 </body>
 
-
 <footer class="fixed" id="home-nav">
     <nav class="bottom">
         <div class="middle-align row">
@@ -154,6 +189,12 @@
 
 <footer class="fixed" id="song-nav" style="display: none;">
     <nav class="bottom">
+        <button class="circle transparent" id="previous-song">
+            <i>arrow_left</i>
+        </button>
+
+        <div class="max"></div>
+
         <button class="circle transparent" id="previous-paragraph">
             <i>arrow_upward</i>
         </button>
@@ -165,13 +206,13 @@
                 <i>visibility</i>
             </span>
         </label>
+
         <button class="circle transparent" id="next-paragraph">
             <i>arrow_downward</i>
         </button>
+
         <div class="max"></div>
-        <button class="circle transparent" id="previous-song">
-            <i>arrow_left</i>
-        </button>
+
         <button class="circle transparent" id="next-song">
             <i>arrow_right</i>
         </button>

@@ -3,38 +3,54 @@ import json
 import os
 from datetime import datetime, timedelta
 from io import BytesIO
+from typing import Literal, Union
 
 import jinja2
 import psycopg2
+from psycopg2 import sql
 import tornado.gen
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
 from tornado.options import define, options
+from tornado.concurrent import run_on_executor
+from concurrent.futures import ThreadPoolExecutor
 
 loader = jinja2.FileSystemLoader("dist")
 env = jinja2.Environment(loader=loader)
 
-sing_alongs: dict[str, dict[str, list[tornado.websocket.WebSocketHandler] | set[str]]] = {}
+sing_alongs: dict[str, "SingAlong"] = {}
+
+GLOBAL_TABLES = [
+    'abend & morgen',
+    'alleluia sing\\german',
+    'hymns\\english',
+    'hymns\\german',
+    'kleine gesangbuch',
+    'lutherische gesangbuch',
+    'stories',
+    'alleluia sing\\english',
+    'vaterlieder',
+]
+
+CUSTOM_COLLECTION_TABLES = [
+    'custom collections',
+]
+
 INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
 VERSION = '1.0.0'
 
-define("port", default=5052, help="run on the given port", type=int)
 
-with open("POSTGRES.json") as f:
-    data = json.load(f)
-    POSTGRES_USER = data["POSTGRES_USER"]
-    POSTGRES_PASSWORD = data["POSTGRES_PASSWORD"]
-    POSTGRES_DB = data["POSTGRES_DB"]
-    POSTGRES_HOST = data["POSTGRES_HOST"]
-    POSTGRES_PORT = data["POSTGRES_PORT"]
-
+POSTGRES_USER = os.environ.get("POSTGRES_USER")
+POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+POSTGRES_DB = os.environ.get("POSTGRES_DB")
+POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT")
 
 class SingAlong:
     def __init__(self, host: tornado.websocket.WebSocketHandler):
         self.host = host
-        self.host_password = ""
         self.description = ""
         self.song_list: list[str] = []
         self.current_song = ""
@@ -45,7 +61,6 @@ class SingAlong:
 
     def to_dict(self) -> dict[str, str | bool | list[str]]:
         return {
-            "host_password": self.host_password,
             "description": self.description,
             "song_list": self.song_list,
             "current_song": self.current_song,
@@ -78,34 +93,16 @@ class VersionHandler(tornado.web.RequestHandler):
 
 
 class FileHandler(tornado.web.RequestHandler):
+    executor = ThreadPoolExecutor(max_workers=int(os.getenv("MAX_POSTGRES_WORKERS")), thread_name_prefix="postgres_worker")
+
     @tornado.gen.coroutine
     def get(self):
-        conn = connect_db()
-        files = []
+        load_type = self.get_argument('type', 'global')
+        folders = self.get_arguments('folders')  # Get folders parameter as a list
 
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT tablename FROM pg_tables WHERE schemaname = 'public';"
-            )
-            tables = cursor.fetchall()
-            for table in tables:
-                table_name = f'"{table[0]}"'
-                cursor.execute(
-                    f"SELECT file_name, relative_path, file_content, is_private FROM {table_name};"
-                )
-                for record in cursor.fetchall():
-                    files.append(
-                        {
-                            "fileName": record[0],
-                            "relativePath": record[1],
-                            "fileContent": record[2],
-                            "isPrivate": record[3],
-                        }
-                    )
-        conn.close()
+        files: list[dict[str, Union[str, bool]]] = yield self.download_files(load_type, folders)
 
         json_data = json.dumps(files)
-
         buffer = BytesIO()
         with gzip.GzipFile(fileobj=buffer, mode="wb") as gz:
             gz.write(json_data.encode("utf-8"))
@@ -118,78 +115,94 @@ class FileHandler(tornado.web.RequestHandler):
 
         self.write(compressed_data)
 
+    @run_on_executor
+    def download_files(self, load_type: Literal['global', 'custom'], folders: list[str]) -> list[dict[str, Union[str, bool]]]:
+        files: list[dict[str, Union[str, bool]]] = []
+        conn = connect_db()
+
+        tables_to_load = GLOBAL_TABLES if load_type == 'global' else CUSTOM_COLLECTION_TABLES
+
+        with conn.cursor() as cursor:
+            for table in tables_to_load:
+                if folders and load_type == 'custom':
+                    cursor.execute(
+                        f'SELECT file_name, relative_path, file_content, is_private FROM "{table}" WHERE relative_path = ANY(%s);',
+                        (folders,)
+                    )
+                elif load_type == 'global':
+                    cursor.execute(
+                        f'SELECT file_name, relative_path, file_content, is_private FROM "{table}";'
+                    )
+                try:
+                    records = cursor.fetchall()
+                except psycopg2.ProgrammingError:  # No folders specified, so return any records
+                    continue
+                for record in records:
+                    files.append(
+                        {
+                            "fileName": record[0],
+                            "relativePath": record[1],
+                            "fileContent": record[2],
+                            "isPrivate": record[3],
+                        }
+                    )
+
+        conn.close()
+        return files
+
     @tornado.gen.coroutine
     def post(self):
-        data = json.loads(self.request.body)
-        action = data.get("action")
+        yield self.add_files()
 
-        if action == "create_folder":
-            folder_name = data.get("folder_name")
-            is_private = data.get("is_private", False)
-            result = self.create_folder(folder_name, is_private)
-            if result:
-                self.write({"status": "success", "message": "Folder created successfully"})
-            else:
-                self.set_status(400)
-                self.write({"status": "error", "message": "Folder creation failed"})
-
-        elif action == "add_file":
-            file_name = data.get("file_name")
-            folder_path = data.get("folder_path")
-            file_content = data.get("file_content")
-            is_private = data.get("is_private", False)
-            result = self.add_file(file_name, folder_path, file_content, is_private)
-            if result:
-                self.write({"status": "success", "message": "File added successfully"})
-            else:
-                self.set_status(400)
-                self.write({"status": "error", "message": "File addition failed"})
-
-    def folder_exists(self, db_conn, folder_path):
-        with db_conn.cursor() as cursor:
-            cursor.execute("SELECT id FROM custom_content WHERE full_path = %s AND is_folder = TRUE", (folder_path,))
-            return cursor.fetchone() is not None
-
-    def create_folder(self, folder_name, is_private):
-        conn = connect_db()
+    @run_on_executor
+    def add_files(self):
         try:
+            data = json.loads(self.request.body.decode("utf-8"))
+            folder_name = data["folderName"]
+            is_private = data["isPrivate"]
+            files = data["files"]
+
+            conn = connect_db()
             with conn.cursor() as cursor:
-                cursor.execute(
-                    "INSERT INTO custom_content (file_name, full_path, is_folder, is_private) VALUES (%s, %s, TRUE, %s) RETURNING id",
-                    (folder_name, folder_name, is_private)
-                )
-                conn.commit()
-                return cursor.fetchone()[0]
-        except Exception as e:
-            print(f"Error creating folder: {e}")
-            return None
-        finally:
+                for file in files:
+                    file_name = file["fileName"]
+                    relative_path = folder_name
+                    file_content = file["fileContent"]
+                    cursor.execute(sql.SQL("""
+                        INSERT INTO {} (file_name, relative_path, file_content, is_private)
+                        VALUES (%s, %s, %s, %s)
+                    """).format(sql.Identifier("custom collections")), (file_name, relative_path, file_content, is_private))
+            conn.commit()
             conn.close()
 
-    def add_file(self, file_name, folder_path, file_content, is_private):
-        conn = connect_db()
-        try:
-            with conn.cursor() as cursor:
-                # Get the parent folder ID
-                cursor.execute(
-                    "SELECT id FROM custom_content WHERE full_path = %s AND is_folder = TRUE", (folder_path,)
-                )
-                parent_folder_id = cursor.fetchone()
-                if not parent_folder_id:
-                    raise ValueError("Specified folder path does not exist")
+            self.write({"status": "success", "message": "Files added to custom collections."})
 
-                cursor.execute(
-                    "INSERT INTO custom_content (file_name, full_path, file_content, is_folder, is_private, parent_folder_id) "
-                    "VALUES (%s, %s, %s, FALSE, %s, %s) RETURNING id",
-                    (file_name, os.path.join(folder_path, file_name), file_content, is_private, parent_folder_id[0])
-                )
-                conn.commit()
-                return cursor.fetchone()[0]
         except Exception as e:
-            print(f"Error adding file: {e}")
-            return None
-        finally:
-            conn.close()
+            self.set_status(500)
+            self.write({"status": "error", "message": str(e)})
+
+
+class PublicFoldersHandler(tornado.web.RequestHandler):
+    @tornado.gen.coroutine
+    def get(self):
+        conn = connect_db()
+        public_folders = set()
+
+        with conn.cursor() as cursor:
+            # Loop through all custom collection tables and fetch public folders
+            for table in CUSTOM_COLLECTION_TABLES:
+                cursor.execute(
+                    f'SELECT DISTINCT relative_path FROM "{table}" WHERE is_private = False;'
+                )
+                records = cursor.fetchall()
+                for record in records:
+                    public_folders.add(record[0])
+
+        conn.close()
+
+        self.write(json.dumps(list(public_folders)))
+
+        self.set_header("Content-Type", "application/json")
 
 
 class PublicSingAlongsHandler(tornado.web.RequestHandler):
@@ -224,24 +237,15 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
             self.sync_client()
 
     def create_sing_along(self, data: dict[str, str | bool | list[str]]):
-        sing_along_id = data.get("sing_along_id")
-        host_password = data.get("host_password")
-        description = data.get("description")
-        song_list = data.get("song_list")
-        private = data.get("private")
+        sing_along = SingAlong(self)
+        sing_along.description = data.get("description")
+        sing_along.song_list = data.get("song_list")
+        sing_along.private = data.get("private")
+        sing_along.current_song = sing_along.song_list[0] if sing_along.song_list else None
 
-        current_song = song_list[0] if song_list else None
-        sing_alongs[sing_along_id] = {
-            "host": self,
-            "host_password": host_password,
-            "description": description,
-            "song_list": song_list,
-            "current_song": current_song,
-            "private": private,
-            "clients": [],
-            "played_songs": set(),
-            "last_activity": datetime.now(),
-        }
+        sing_along_id = data.get("sing_along_id")
+
+        sing_alongs[sing_along_id] = sing_along
 
         self.sing_along_id = sing_along_id
         self.is_host = True
@@ -251,10 +255,10 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
         sing_along_id = data.get("sing_along_id")
         if sing_along := sing_alongs.get(sing_along_id):
             self.sing_along_id = sing_along_id
-            if data.get("host_password") == sing_alongs[sing_along_id]['host_password']:
+            if data.get("host_password") == sing_alongs[sing_along_id]:
                 self.is_host = True
             else:
-                sing_along["clients"].append(self)
+                sing_along.clients.append(self)
             played_songs_list = list(sing_along["played_songs"])
             song_list = sing_along["song_list"]
             self.write_message({"action": "joined", "sing_along_id": sing_along_id, "current_song": sing_along["current_song"], "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
@@ -267,15 +271,15 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
 
         if sing_along_id and sing_along_id in sing_alongs:
             sing_along = sing_alongs[sing_along_id]
-            sing_along["current_song"] = song
-            sing_along["played_songs"].add(song)
-            sing_along["last_activity"] = datetime.now()
+            sing_along.current_song = song
+            sing_along.played_songs.add(song)
+            sing_along.last_activity = datetime.now()
 
             played_songs_list = list(sing_along["played_songs"])
             song_list = sing_along["song_list"]
-            for client in sing_along["clients"]:
-                client.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
-            self.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
+            for client in sing_along.clients:
+                client.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
+            self.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
 
     def sync_client(self):
         if self.sing_along_id and self.sing_along_id in sing_alongs:
@@ -292,7 +296,6 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
             sing_along["clients"].remove(self)
             self.write_message({"action": "left"})
 
-
     def end_sing_along(self):
         if self.is_host and self.sing_along_id and self.sing_along_id in sing_alongs:
             sing_along = sing_alongs[self.sing_along_id]
@@ -303,12 +306,12 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
 
     def on_close(self):
         if self.sing_along_id and self.sing_along_id in sing_alongs:
-            sing_along = sing_alongs[self.sing_along_id]
-            sing_along["clients"].remove(self)
-            if self.is_host:
-                for client in sing_along["clients"]:
-                    client.write_message({"action": "end_sing_along"})
-                del sing_alongs[self.sing_along_id]
+            if sing_along := sing_alongs[self.sing_along_id]:
+                sing_along.clients.remove(self)
+                if self.is_host:
+                    for client in sing_along.clients:
+                        client.write_message({"action": "end_sing_along"})
+                    del sing_alongs[self.sing_along_id]
 
 
 def make_app():
@@ -317,8 +320,7 @@ def make_app():
             (r"/", MainHandler),
             (r"/dist/(.*)", tornado.web.StaticFileHandler, {"path": "dist"}),
             (r"/api/files", FileHandler),
-            (r"/api/create_folder", FileHandler),
-            (r"/api/add_file", FileHandler),
+            (r"/api/public_folders", PublicFoldersHandler),
             (r"/ws", SingAlongWebSocket),
             (r"/version", VersionHandler),
             (r"/public_sing_alongs", PublicSingAlongsHandler),
@@ -342,6 +344,6 @@ def check_inactive_sessions():
 if __name__ == "__main__":
     options.parse_command_line()
     app = tornado.httpserver.HTTPServer(make_app())
-    app.listen(options.port)
+    app.listen(os.getenv("PORT"))
     tornado.ioloop.PeriodicCallback(check_inactive_sessions, 60 * 60 * 1000).start()  # Check every hour
     tornado.ioloop.IOLoop.instance().start()

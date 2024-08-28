@@ -1,10 +1,7 @@
-* {
+html, body, div, article, p, h1, h2, h3, h4, h5, h6, ul, li, span, a, button, input, textarea, select, details, summary, footer, nav {
     transition: background-color 0.3s ease-in-out, color 0.1s ease;
 }
 
-header{
-    transition: background-color 0.05s ease, color 0.05s ease !important;
-}
 
 .hidden{
     display: none !important;
@@ -26,6 +23,15 @@ header{
     height: 100%;
     padding: 16px;
 }
+
+.file-item i{
+    display: none;
+}
+
+.file-item.selectable i {
+    display: flex;
+}
+
 .file-item.selectable {
     cursor: pointer;
 }
@@ -34,6 +40,7 @@ header{
     background-color: var(--on-primary) !important;
     color: var(--primary) !important;
 }
+
 ::selection {
     color: var(--on-primary);
     background-color: var(--primary);
