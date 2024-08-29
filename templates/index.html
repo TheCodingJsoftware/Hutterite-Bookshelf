@@ -7,7 +7,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <link rel="icon" href="/static/favicon.png">
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="description" content="Your own bookshelf of Hutterite songs.">
+    <meta name="description" content="A comprehensive app for accessing, managing, and sharing Hutterite literature.">
     <title>Hutterite Bookshelf</title>
 </head>
 
@@ -31,6 +31,10 @@
                 <a class="row" id="toggle-theme">
                     <i></i>
                     <span>Toggle Theme</span>
+                </a>
+                <a class="row" id="install-pwa">
+                    <i></i>
+                    <span>Install</span>
                 </a>
                 <a class="row" id="toggle-collections">
                     <i>book</i>
@@ -61,12 +65,14 @@
         <img class="responsive round border center-align row max" style="max-width: 150px; height: auto;" fetchpriority="low" loading="lazy" src="/static/icon.png" alt="" width="128" height="128">
     </div>
     <div class="padding">
-        <h5 class="small center-align">Hutterite Bookshelf</h5>
-        <p class="small">Your own personal Hutterite bookshelf.</p>
-        <p class="center-align">Developed by <a class="link" href="https://thecodingjsoftware.github.io/">TheCodingJ's</a></p>
+        <h5 class="small center-align" id="app-name-version">Hutterite Bookshelf</h5>
+        <p class="center-align">
+            A comprehensive app for accessing,<br>
+            managing, and sharing Hutterite literature.</p>
+        <p class="center-align">Developed with <i>favorite</i> by <a class="link" href="https://thecodingjsoftware.github.io/">TheCodingJ's</a></p>
     </div>
     <article class="border" style="margin-top: auto;">
-        <p class="small center-align">
+        <p class="center-align">
             For questions, comments, suggestions, <br>
             or concerns about this service please <br>
             email: <a class="link" href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a>.
@@ -111,6 +117,10 @@
 <div class="overlay blur"></div>
 <dialog class="right" id="custom-collections-dialog">
     <h5 class="small center-align">Custom Collections</h5>
+    <p class="center-align">
+        You need to be connected to the<br>
+        internet to use this feature.
+    </p>
     <div class="scroll" id="custom-folders-list">
     </div>
     <nav class="right-align transparent">
@@ -126,7 +136,11 @@
 
 <body>
     <main class="responsive">
-        <div class="snackbar primary top" id="success-snackbar"></div>
+        <div class="snackbar primary" id="success-snackbar"></div>
+        <div class="snackbar" id="update-snackbar">
+            <div class="max" id="update-snackbar-text"></div>
+            <a class="inverse-link" id="update-snackbar-update">Update</a>
+          </div>
         <div class="snackbar error" id="error-snackbar"></div>
 
         <div class="page active" id="home">

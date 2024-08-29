@@ -1,13 +1,16 @@
-const CACHE_NAME = 'my-cache-v2';
+const CACHE_NAME = `cache`;
 const urlsToCache = [
     '/',
     '/static/favicon.png',
     '/static/icon.png',
     '/serviceWorker.js',
     '/dist/index.bundle.js',
+    '/dist/runtime.bundle.js',
+    '/dist/361.bundle.js',
     '/dist/index.html',
 ];
 
+// Install event: cache resources
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
@@ -33,8 +36,9 @@ self.addEventListener('install', event => {
     );
 });
 
-
+// Fetch event: serve from cache, then network
 self.addEventListener('fetch', event => {
+    const url = new URL(event.request.url);
     if (event.request.method === 'GET') {
         event.respondWith(
             caches.match(event.request).then(cachedResponse => {
@@ -54,6 +58,7 @@ self.addEventListener('fetch', event => {
                     });
                 }).catch(error => {
                     console.error('Fetch failed:', error);
+                    // Return a fallback page or message
                     return new Response("You are offline, and this resource is not cached.");
                 });
             })
@@ -62,6 +67,7 @@ self.addEventListener('fetch', event => {
 });
 
 
+// Activate event: clear old caches
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys => {
@@ -80,18 +86,21 @@ self.addEventListener('activate', event => {
     );
 });
 
-
+// Message event: update cache when version changes
 self.addEventListener('message', event => {
+    if (event.data.action === 'newUpdateCache') {
+        updateCache(true);
+    }
     if (event.data.action === 'updateCache') {
-        updateCache();
+        updateCache(false);
     }
 });
 
-function updateCache() {
+function updateCache(giveResponse) {
     caches.keys().then(function (names) {
         return Promise.all(names.map(name => caches.delete(name)));
     }).then(function () {
-        caches.open(CACHE_NAME).then(cache => {
+        return caches.open(CACHE_NAME).then(cache => {
             return Promise.all(
                 urlsToCache.map(url => {
                     return fetch(url, {
@@ -108,10 +117,12 @@ function updateCache() {
             );
         });
     }).then(() => {
-        self.clients.matchAll().then(clients => {
-            clients.forEach(client => client.postMessage({
-                action: 'cacheUpdated'
-            }));
-        });
+        if (giveResponse) {
+            self.clients.matchAll().then(clients => {
+                clients.forEach(client => client.postMessage({
+                    action: 'cacheUpdated'
+                }));
+            });
+        }
     });
 }

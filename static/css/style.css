@@ -103,3 +103,11 @@ h6 .highlight {
     padding-right: 1px;
     display: inline-block !important;
 }
+#install-pwa {
+    display: none
+ }
+ @media (display-mode: browser) {
+    #install-pwa {
+      display: flex
+    }
+ }

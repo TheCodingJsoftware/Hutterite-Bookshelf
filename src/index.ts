@@ -27,9 +27,29 @@ let publicFolders: string[] = [];
 const LONG_PRESS_DURATION = 500; // Duration in milliseconds to consider a long press
 let longPressTimer: number | null = null;
 
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+let deferredPrompt: BeforeInstallPromptEvent | null = null;
+
+window.addEventListener('beforeinstallprompt', (e: Event) => {
+    e.preventDefault();
+    deferredPrompt = e as BeforeInstallPromptEvent;
+    const installButton = document.getElementById('install-pwa');
+    if (installButton) {
+        installButton.style.display = 'block';
+    }
+});
+
 
 function escapeRegExp(string: string): string {
     return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+}
+
+function isMobileDevice() {
+    return /Mobi|Android/i.test(navigator.userAgent);
 }
 
 function saveCustomFoldersToLocalStorage(folders: FolderData[]) {
@@ -335,7 +355,6 @@ function getFileButton(file: FileData): HTMLElement {
 
     return fileContainer;
 }
-
 
 function getCustomFileButton(file: FileData, showText: boolean = true): HTMLElement {
     const fileButton = document.createElement('a');
@@ -664,13 +683,24 @@ function focusParagraph(index: number) {
 function showSuccessSnackbar(message: string) {
     const snackbar = document.getElementById('success-snackbar') as HTMLDivElement;
     snackbar.textContent = message;
-    ui('#success-snackbar');
+    ui('#success-snackbar', 3000);
+}
+
+function showUpdateCompleteSnackbar(message: string) {
+    const snackbar = document.getElementById('update-snackbar') as HTMLDivElement;
+    const snackbarUpdate = snackbar.querySelector('#update-snackbar-update') as HTMLAnchorElement;
+    snackbarUpdate.onclick = () => {
+        window.location.reload();
+    };
+    const snackbarText = snackbar.querySelector('#update-snackbar-text') as HTMLDivElement;
+    snackbarText.textContent = message;
+    ui('#update-snackbar', 6000);
 }
 
 function showErrorSnackbar(message: string) {
     const snackbar = document.getElementById('error-snackbar') as HTMLDivElement;
     snackbar.textContent = message;
-    ui('#error-snackbar');
+    ui('#error-snackbar', 6000);
 }
 
 function initializeFileContent() {
@@ -863,7 +893,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const selectSongsToggle = document.getElementById('select-songs-toggle') as HTMLInputElement;
     const clearSelectionButton = document.getElementById('clear-selection') as HTMLButtonElement;
     const customFolderList = document.getElementById('custom-folders-list') as HTMLDivElement;
+    const installPWA = document.getElementById('install-pwa') as HTMLButtonElement;
+    const installIcon = installPWA.querySelector('i') as HTMLElement;
 
+    if (isMobileDevice()) {
+        installIcon.textContent = `install_mobile`;
+    } else {
+        installIcon.textContent = `install_desktop`;
+    }
     clearSelectionButton.style.display = 'none';
 
     const currentHash = window.location.hash;
@@ -911,8 +948,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     });
-
-
+    installPWA.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            await deferredPrompt.prompt();
+            const choiceResult = await deferredPrompt.userChoice;
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+            } else {
+                console.log('User dismissed the install prompt');
+            }
+            deferredPrompt = null;
+            installPWA.style.display = 'none';
+        }
+    });
     document.querySelector('#text-increase')?.addEventListener('click', () => {
         const newSize = getFontSize() + 1;
         updateFontSize(newSize);
@@ -1176,13 +1224,46 @@ async function init() {
     try {
         if ('serviceWorker' in navigator) {
             try {
-                navigator.serviceWorker.register('/serviceWorker.js', { scope: '/' })
+                const registration = await navigator.serviceWorker.register('/serviceWorker.js', { scope: '/' });
                 console.log('ServiceWorker registration successful with scope: /');
+
+                if (navigator.onLine) {
+                    const response = await fetch('/version');
+                    const data = await response.json();
+                    const currentVersion = localStorage.getItem('latestVersion');
+
+                    if (currentVersion !== data.version) {
+                        navigator.serviceWorker.addEventListener('message', event => {
+                            if (event.data.action === 'cacheUpdated') {
+                                setTimeout(() => {
+                                    showUpdateCompleteSnackbar(`Update available: v${data.version}`);
+                                }, 5000);
+                            }
+                        });
+
+                        if (registration.active) {
+                            registration.active.postMessage({ action: 'newUpdateCache' });
+                            console.log('New version detected, updating cache...');
+                        }
+                        localStorage.setItem('latestVersion', data.version);
+                    }else{
+                        if (registration.active) {
+                            registration.active.postMessage({ action: 'updateCache' });
+                            console.log('Version check passed, updating cache...');
+                        }
+                    }
+                } else {
+                    console.log('Offline: Skipping version check');
+                }
             } catch (error) {
                 console.log('ServiceWorker registration failed: ', error);
             }
         }
+        const VERSION = localStorage.getItem('latestVersion') || '1.0.0';
+        const appNameVersion = document.getElementById('app-name-version') as HTMLHeadingElement;
+        appNameVersion.textContent = `Hutterite Bookshelf v${VERSION}`;
 
+        // Initialize databases and fetch data
         const customFolders = getCustomFoldersFromLocalStorage();
         const [globalDB, customDB] = await Promise.all([
             initGlobalDB(),

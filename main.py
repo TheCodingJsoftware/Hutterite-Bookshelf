@@ -1,6 +1,7 @@
 import gzip
 import json
 import os
+import re
 from datetime import datetime, timedelta
 from io import BytesIO
 from typing import Literal, Union
@@ -42,7 +43,7 @@ CUSTOM_COLLECTION_TABLES = [
 ]
 
 INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
-VERSION = '1.0.0'
+VERSION = '0.0.1'
 
 
 POSTGRES_USER = os.environ.get("POSTGRES_USER")
@@ -50,6 +51,7 @@ POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 POSTGRES_DB = os.environ.get("POSTGRES_DB")
 POSTGRES_HOST = os.environ.get("POSTGRES_HOST")
 POSTGRES_PORT = os.environ.get("POSTGRES_PORT")
+
 
 class SingAlong:
     def __init__(self, host: tornado.websocket.WebSocketHandler):
@@ -94,7 +96,9 @@ class ServiceWorkerHandler(tornado.web.RequestHandler):
     def get(self):
         self.set_header('Content-Type', 'application/javascript')
         with open("serviceWorker.js", "r") as file:
-            self.write(file.read())
+            script = file.read()
+            # script = re.sub(r"const VERSION = '.*?';", f"const VERSION = '{VERSION}';", script)
+            self.write(script)
 
 
 class VersionHandler(tornado.web.RequestHandler):
