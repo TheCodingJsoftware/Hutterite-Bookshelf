@@ -7,6 +7,7 @@ const urlsToCache = [
     '/static/icons/icon.png',
     '/serviceWorker.js',
     '/dist/index.bundle.js',
+    '/dist/privacy_policy.bundle.js',
     '/dist/runtime.bundle.js',
     '/dist/361.bundle.js',
     '/dist/index.html',

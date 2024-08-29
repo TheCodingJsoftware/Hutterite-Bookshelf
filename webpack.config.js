@@ -5,6 +5,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
     entry: {
         index: './src/index.ts',
+        privacy_option: './src/privacy_policy.ts',
     },
     output: {
         filename: '[name].bundle.js',
@@ -42,10 +43,12 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './templates/index.html',
             filename: 'index.html',
+            chunks: ['index', 'runtime', 'vendors'], // Include only the index.ts related chunks
         }),
         new HtmlWebpackPlugin({
             template: './templates/privacy_policy.html',
             filename: 'privacy_policy.html',
+            chunks: ['privacy_option', 'runtime', 'vendors'], // Include only the privacy_policy.ts related chunks
         }),
     ],
 };

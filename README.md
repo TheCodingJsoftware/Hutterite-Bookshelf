@@ -4,7 +4,7 @@
 
 # Hutterite Bookshelf
 
-Your own bookshelf of Hutterite songs.
+A comprehensive app for accessing, managing, and sharing Hutterite literature.
 
 ## Status
 
@@ -60,8 +60,8 @@ Your own bookshelf of Hutterite songs.
     POSTGRES_PASSWORD=your_password
     POSTGRES_DB=your_database
     POSTGRES_HOST=localhost
-    POSTGRES_PORT=5432
-    MAX_POSTGRES_WORKERS=5
+    POSTGRES_PORT=5434
+    MAX_POSTGRES_WORKERS=50
     ```
 
 11. Run `python main.py` to start the app.
@@ -78,7 +78,7 @@ Ensure your Synology NAS has Docker installed. If not, install Docker from the S
 
 #### Build the Docker Image Locally
 
-Make sure your `Dockerfile`, `requirements.txt`, and `app.py` are ready. Then, build the Docker image locally:
+Make sure your `Dockerfile`, `requirements.txt`, and `main.py` are ready. Then, build the Docker image locally:
 
 ```bash
 docker build -t app-name .
