@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="static/icon.png" style="border-radius: 50%; width: 200px; border: 1px solid gray;"/>
+    <img src="static/icons/icon.png" style="border-radius: 50%; width: 200px; border: 1px solid gray;"/>
 </p>
 
 # Hutterite Bookshelf
@@ -85,6 +85,7 @@ docker build -t app-name .
 ```
 
 #### Push the Docker Image to Docker Hub (optional)
+
 If you want to push the image to Docker Hub, you can do so. Replace `your-docker-username` with your actual Docker Hub username:
 
 ```bash

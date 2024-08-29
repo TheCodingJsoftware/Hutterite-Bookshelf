@@ -1,5 +1,6 @@
 .venv
 .vscode
+.idea
 dist/
 dist/js/
 node_modules/
@@ -10,3 +11,16 @@ package-lock.json
 POSTGRES.json
 docker_build_push.bat
 .env
+.gradle
+app/
+gradlew
+gradle.properties
+build.gradle
+android.keystore
+local.properties
+gradlew.bat
+store_icon.png
+settings.gradle
+twa-manifest.json
+gradle/
+manifest-checksum.txt

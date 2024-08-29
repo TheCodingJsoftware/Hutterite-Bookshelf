@@ -3,13 +3,14 @@ const urlsToCache = [
     '/',
     '/static/css/theme.css',
     '/static/css/style.css',
-    '/static/favicon.png',
-    '/static/icon.png',
+    '/static/icons/favicon.png',
+    '/static/icons/icon.png',
     '/serviceWorker.js',
     '/dist/index.bundle.js',
     '/dist/runtime.bundle.js',
     '/dist/361.bundle.js',
     '/dist/index.html',
+    '/dist/privacy_policy.html',
 ];
 
 // Install event: cache resources
@@ -47,10 +48,6 @@ self.addEventListener('fetch', event => {
                 if (cachedResponse) {
                     console.log('Serving from cache:', event.request.url);
                     return cachedResponse;
-                }
-
-                if (event.request.mode === 'navigate') {
-                    return caches.match('/dist/index.html');
                 }
 
                 return fetch(event.request).then(fetchResponse => {

@@ -43,7 +43,7 @@ CUSTOM_COLLECTION_TABLES = [
 ]
 
 INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
-VERSION = '0.0.1'
+VERSION = '0.0.4'
 
 
 POSTGRES_USER = os.environ.get("POSTGRES_USER")
@@ -88,6 +88,12 @@ def connect_db():
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
         template = env.get_template("index.html")
+        rendered_template = template.render()
+        self.write(rendered_template)
+
+class PrivacyPolicyHandler(tornado.web.RequestHandler):
+    def get(self):
+        template = env.get_template("privacy_policy.html")
         rendered_template = template.render()
         self.write(rendered_template)
 
@@ -332,8 +338,10 @@ def make_app():
     return tornado.web.Application(
         [
             (r"/", MainHandler),
+            (r"/privacy_policy", PrivacyPolicyHandler),
             (r"/serviceWorker.js", ServiceWorkerHandler),
             (r"/dist/(.*)", tornado.web.StaticFileHandler, {"path": "dist"}),
+            (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "static"}),
             (r"/api/files", FileHandler),
             (r"/api/public_folders", PublicFoldersHandler),
             (r"/ws", SingAlongWebSocket),
@@ -341,7 +349,6 @@ def make_app():
             (r"/public_sing_alongs", PublicSingAlongsHandler),
         ],
         static_path=os.path.join(os.path.dirname(__file__), "static"),
-        compress_response=True,
     )
 
 
