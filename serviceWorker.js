@@ -1,6 +1,8 @@
 const CACHE_NAME = `cache`;
 const urlsToCache = [
     '/',
+    '/static/css/theme.css',
+    '/static/css/style.css',
     '/static/favicon.png',
     '/static/icon.png',
     '/serviceWorker.js',

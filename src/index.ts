@@ -39,8 +39,10 @@ window.addEventListener('beforeinstallprompt', (e: Event) => {
     deferredPrompt = e as BeforeInstallPromptEvent;
     const installButton = document.getElementById('install-pwa');
     if (installButton) {
-        installButton.style.display = 'block';
+        installButton.style.display = 'flex';
     }
+
+    console.log('beforeinstallprompt event fired');
 });
 
 
