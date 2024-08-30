@@ -32,7 +32,6 @@ let currentParagraphIndex = 0;
 let focusEnabled = false;
 let flattenedFileList: FileData[] = [];
 let currentSongIndex = -1;
-let debounceTimer: number | null = null; // For filtering songs
 let isSelectableMode = false;
 let publicFolders: string[] = [];
 const LONG_PRESS_DURATION = 500; // Duration in milliseconds to consider a long press
@@ -40,11 +39,415 @@ let longPressTimer: number | null = null;
 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const socketUrl = `${protocol}//${window.location.host}/ws`;
 let socket: WebSocket | null = null;
-
-
-
-
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
+
+
+class SongContainer {
+    containerID: string;
+    container: HTMLDivElement;
+    searchSongInput: HTMLInputElement;
+    header: HTMLHeadingElement
+    content: HTMLDivElement;
+    currentParagraphIndex: number;
+    paragraphs: NodeListOf<HTMLParagraphElement>;
+
+    constructor(contaierID: string) {
+        this.containerID = contaierID;
+        this.container = document.getElementById(this.containerID) as HTMLDivElement;
+        this.searchSongInput = this.container.querySelector("#search-song-content-input") as HTMLInputElement;
+        this.header = this.container.querySelector("#file-name-header") as HTMLHeadingElement;
+        this.content = this.container.querySelector("#file-content") as HTMLDivElement;
+        this.paragraphs = new NodeList() as NodeListOf<HTMLParagraphElement>;
+        this.currentParagraphIndex = 0;
+        this.updateFontSize();
+        this.initialize();
+    }
+
+    initialize() {
+        this.searchSongInput.addEventListener('input', () => {
+            this.searchSongContents();
+        });
+    }
+
+    wrapInParagraphsWithSpans(htmlContent: string) {
+        const sections = htmlContent.split('<br><br>');
+
+        return sections.map(section => {
+            const lines = section.split('<br>');
+            const spanContent = lines.map(line => `<span>${line}</span>`).join('');
+
+            if (lines.length > 2) {
+                const id = lines[0].trim().toLowerCase().replace(/[^a-zA-Z0-9]+/g, '-');
+                return `<p id="${id}">${spanContent}</p>`;
+            } else {
+                return spanContent; // Return the single line as is without <p> tags
+            }
+        }).join('');
+    }
+
+    searchSongContents() {
+        const query = this.searchSongInput.value.trim();
+        const helperSpan = this.container.querySelector('#search-song .helper') as HTMLElement;
+
+        let totalMatches = 0;
+
+        this.paragraphs.forEach(paragraph => {
+            const spans = paragraph.querySelectorAll('span');
+
+            spans.forEach(span => {
+                span.innerHTML = span.innerHTML.replace(/<span class="highlight">(.*?)<\/span>/gi, '$1');
+
+                if (query === '') {
+                    return;
+                }
+
+                const escapedQuery = escapeRegExp(query);
+                const regex = new RegExp(`(${escapedQuery})`, 'gi');
+
+                const matches = [...span.textContent!.matchAll(regex)];
+                totalMatches += matches.length;
+
+                if (matches.length > 0) {
+                    span.innerHTML = span.innerHTML.replace(regex, '<span class="highlight">$1</span>');
+                }
+            });
+        });
+
+        if (query === '') {
+            helperSpan.textContent = '';
+        } else {
+            helperSpan.textContent = `${totalMatches} result${totalMatches !== 1 ? 's' : ''} found`;
+        }
+    }
+
+    updateFontSize() {
+        this.content.style.fontSize = `${getFontSize()}px`;
+    }
+
+    removeFocusFromAllParagraphs() {
+        this.paragraphs.forEach(paragraph => {
+            paragraph.classList.remove('active-paragraph');
+            paragraph.classList.remove('blur');
+            paragraph.classList.remove('blur-none');
+        });
+    }
+
+    moveToPreviousParagraph() {
+        this.currentParagraphIndex--;
+        if (this.currentParagraphIndex < 0) {
+            this.currentParagraphIndex = this.paragraphs.length - 1;
+        }
+        focusParagraph(this.currentParagraphIndex);
+    }
+
+    moveToNextParagraph() {
+        this.currentParagraphIndex++;
+        if (this.currentParagraphIndex >= this.paragraphs.length) {
+            this.currentParagraphIndex = 0;
+        }
+        focusParagraph(this.currentParagraphIndex);
+    }
+
+    displaySong(file: FileData) {
+        const formattedContent = file.fileContent.replace(/\n/g, '<br>');
+        this.header.textContent = file.fileName.replace('.txt', '');
+        this.content.innerHTML = this.wrapInParagraphsWithSpans(formattedContent);
+        this.paragraphs = this.content.querySelectorAll('p');
+    }
+
+    hide() {
+        this.container.style.display = 'none';
+    }
+
+    show() {
+        this.container.style.display = 'block';
+    }
+}
+
+class HomePage {
+    pageID: string;
+    container: HTMLDivElement;
+    searchSongsInput: HTMLInputElement;
+    debounceTimer: number | null = null; // For filtering songs
+    songPage: SongPage;
+    fileList: HTMLDivElement;
+    customCollectionsContainer: HTMLDivElement;
+    customCollectionsFileList: HTMLDivElement;
+    constructor(pageID: string, songPage: SongPage) {
+        this.pageID = pageID;
+        this.songPage = songPage;
+
+        this.debounceTimer = null;
+
+        this.container = document.getElementById(this.pageID) as HTMLDivElement;
+        this.searchSongsInput = this.container.querySelector("#search-songs-input") as HTMLInputElement;
+        this.fileList = this.container.querySelector("#file-list") as HTMLDivElement;
+        this.customCollectionsContainer = this.container.querySelector("#custom-collections-container") as HTMLDivElement;
+        this.customCollectionsContainer.style.display = 'none';
+        this.customCollectionsFileList = this.customCollectionsContainer.querySelector("#custom-collections-file-list") as HTMLDivElement;
+        this.initialize();
+    }
+
+    initialize() {
+        this.searchSongsInput.addEventListener('input', () => {
+            const query = this.searchSongsInput.value.trim();
+            if (query === '') {
+                if (this.debounceTimer) {
+                    clearTimeout(this.debounceTimer);
+                    this.debounceTimer = null;
+                }
+                this.filterSongs(query);
+                return;
+            }
+
+            if (this.debounceTimer) {
+                clearTimeout(this.debounceTimer);
+            }
+
+            this.debounceTimer = window.setTimeout(() => {
+                this.filterSongs(query);
+            }, 300);
+        });
+    }
+
+    async filterSongs(query: string) {
+        const helperText = document.querySelector('#search-songs .helper') as HTMLElement;
+        if (query === '') {
+            this.renderFileList();
+            helperText.textContent = '';
+            return;
+        }
+        let filteredFiles: FileData[] = globalDBFiles.filter(file =>
+            file.fileName.toLowerCase().includes(query.toLowerCase())
+        );
+        filteredFiles = filteredFiles.concat(customDBFiles.filter(file =>
+            file.fileName.toLowerCase().includes(query.toLowerCase())
+        ));
+        helperText.textContent = `${filteredFiles.length} result${filteredFiles.length !== 1 ? 's' : ''} found`;
+        this.renderFilteredFileList(filteredFiles, query);
+    }
+
+    renderFilteredFileList(files: FileData[], query: string) {
+        this.fileList.innerHTML = '';
+        const customContent = document.getElementById('custom-collections-container') as HTMLDivElement;
+        customContent.style.display = 'none';
+
+        if (files.length === 0) {
+            const noResults = document.createElement('article');
+            noResults.className = 'margin padding';
+            noResults.textContent = 'No results found.';
+            this.fileList.appendChild(noResults);
+            return
+        }
+
+        const content = document.createElement('article');
+        content.className = "scroll margin";
+
+        const fragment = document.createDocumentFragment();
+
+        files.forEach(file => {
+            const escapedQuery = escapeRegExp(query);
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+
+            const fileContainer = getFileButton(file);
+            const fileButton = fileContainer.querySelector('a') as HTMLAnchorElement;
+            fileButton.className = 'small-padding wave file-item wrap no-round grid';
+
+            const headline = fileButton.querySelector('h6') as HTMLHeadingElement;
+            headline.innerHTML = headline.innerHTML.replace(/<span class="highlight">(.*?)<\/span>/gi, '$1');
+            headline.innerHTML = headline.textContent!.replace(regex, '<span class="highlight">$1</span>');
+
+            const supportingText = document.createElement('p');
+            supportingText.className = "small s12 right-align";
+            supportingText.textContent = file.relativePath;
+            fileButton.appendChild(supportingText);
+
+            fragment.appendChild(fileContainer);
+
+            const divider = document.createElement('div');
+            divider.className = 'divider';
+            fragment.appendChild(divider);
+        });
+
+        content.appendChild(fragment);
+        this.fileList.appendChild(content);
+        updateFileSelectionVisuals();
+    }
+
+    renderFileList() {
+        flattenedFileList = [];
+        const globalFileTree: { [key: string]: any } = {};
+        const customFileTree: { [key: string]: any } = {};
+
+        this.fileList.innerHTML = '';
+        this.customCollectionsFileList.innerHTML = '';
+
+        if (customDBFiles.length > 0) {
+            this.customCollectionsContainer.style.display = 'block';
+        } else {
+            this.customCollectionsContainer.style.display = 'none';
+        }
+
+        const naturalSort = (a: string, b: string) => {
+            return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+        };
+
+        globalDBFiles.forEach(file => {
+            const pathParts = file.relativePath.split('\\');
+            let currentLevel = globalFileTree;
+
+            pathParts.forEach((part, index) => {
+                if (!currentLevel[part]) {
+                    currentLevel[part] = (index === pathParts.length - 1) ? [] : {};
+                }
+                currentLevel = currentLevel[part];
+            });
+
+            currentLevel.push(file);
+        });
+
+        customDBFiles.forEach(file => {
+            const pathParts = file.relativePath.split('\\');
+            let currentLevel = customFileTree;
+
+            pathParts.forEach((part, index) => {
+                if (!currentLevel[part]) {
+                    currentLevel[part] = (index === pathParts.length - 1) ? [] : {};
+                }
+                currentLevel = currentLevel[part];
+            });
+
+            currentLevel.push(file);
+        });
+
+        const sortTree = (tree: any) => {
+            Object.keys(tree).forEach(key => {
+                if (Array.isArray(tree[key])) {
+                    tree[key].sort((a: FileData, b: FileData) => naturalSort(a.fileName, b.fileName));
+                } else {
+                    sortTree(tree[key]);
+                }
+            });
+        };
+
+        sortTree(globalFileTree);
+        sortTree(customFileTree);
+
+        flattenFileTree(globalFileTree);
+        flattenFileTree(customFileTree);
+
+        const createFileTree = (tree: any, depth: number = 0, customContent: boolean = false): DocumentFragment => {
+            const fragment = document.createDocumentFragment();
+
+            Object.keys(tree).sort(naturalSort).forEach(key => {
+                const value = tree[key];
+                const details = document.createElement('details');
+                details.className = 'small-margin small-round';
+
+                details.addEventListener('toggle', () => {
+                    if (details.open) {
+                        summary.classList.add('primary');
+                        summary.classList.remove('fill');
+                    } else {
+                        summary.classList.remove('primary');
+                        summary.classList.add('fill');
+                    }
+                });
+
+                const summary = document.createElement('summary');
+                summary.className = 'none no-padding fill';
+
+                const groupElement = document.createElement('a');
+                groupElement.className = 'row wave padding small-round';
+
+                const imgElement = document.createElement('i');
+                const groupIcon = Array.isArray(value) ? "ri-book-shelf-line" : "ri-folder-fill";
+                imgElement.className = groupIcon;
+                groupElement.appendChild(imgElement);
+
+                const divElement = document.createElement('div');
+                divElement.className = 'max';
+
+                const groupNameElement = document.createElement('p');
+                groupNameElement.textContent = key;
+                divElement.appendChild(groupNameElement);
+
+                groupElement.appendChild(divElement);
+
+                summary.appendChild(groupElement);
+                details.appendChild(summary);
+
+                const lazyLoadContainer = document.createElement('div'); // Placeholder for lazy loading
+                details.appendChild(lazyLoadContainer);
+
+                details.addEventListener('toggle', () => {
+                    if (details.open && !lazyLoadContainer.hasChildNodes()) {
+                        if (Array.isArray(value)) {
+                            const fileArticle = document.createElement('article');
+                            fileArticle.className = 'group-content no-border no-round no-padding';
+                            fileArticle.style.marginTop = '0px';
+
+                            value.forEach((file: FileData) => {
+                                if (customContent) {
+                                    const fileButton = getCustomFileButton(file);
+                                    fileArticle.appendChild(fileButton);
+                                } else {
+                                    const fileButton = getFileButton(file);
+                                    fileArticle.appendChild(fileButton);
+                                }
+                                const divider = document.createElement('div');
+                                divider.className = 'divider';
+                                fileArticle.appendChild(divider);
+                            });
+
+                            lazyLoadContainer.appendChild(fileArticle);
+                        } else {
+                            lazyLoadContainer.appendChild(createFileTree(value, depth + 1));
+                        }
+                    }
+                    updateFileSelectionVisuals();
+                });
+                fragment.appendChild(details);
+            });
+            return fragment;
+        };
+
+        const globalFileTreeFragment = createFileTree(globalFileTree, 0, false);
+        this.fileList.appendChild(globalFileTreeFragment);
+
+        const customFileTreeFragment = createFileTree(customFileTree, 0, true);
+        this.customCollectionsFileList.appendChild(customFileTreeFragment);
+
+        const progressElement = document.querySelector('#progress-bar-container') as HTMLDivElement;
+        if (progressElement) {
+            progressElement.classList.add('hidden');
+            progressElement.style.display = 'none';
+        }
+    }
+}
+
+class SongPage {
+    pageID: string | undefined;
+    container: HTMLDivElement;
+    songContainer: SongContainer;
+    constructor(pageID: string) {
+        this.pageID = pageID;
+        this.container = document.getElementById(this.pageID) as HTMLDivElement;
+        this.songContainer = new SongContainer(this.pageID);
+    }
+}
+
+class SingAlongPage {
+    pageID: string | undefined;
+    container: HTMLDivElement;
+    songContainer: SongContainer;
+    constructor(pageID: string) {
+        this.pageID = pageID;
+        this.container = document.getElementById(this.pageID) as HTMLDivElement;
+        this.songContainer = new SongContainer(this.pageID);
+    }
+}
+
 
 window.addEventListener('beforeinstallprompt', (e: Event) => {
     e.preventDefault();
@@ -238,34 +641,6 @@ function flattenFileTree(tree: any, basePath: string = '') {
     });
 }
 
-async function filterSongs(query: string) {
-    const [globalDB, customDB] = await Promise.all([
-        initGlobalDB(),
-        initCustomCollectionDB(),
-    ]);
-
-    const helperText = document.querySelector('#search-songs .helper') as HTMLElement;
-
-    if (query === '') {
-        renderFileList(globalDBFiles, globalDB, customDBFiles, customDB);
-        helperText.textContent = '';
-        return;
-    }
-    let filteredFiles: FileData[] = globalDBFiles.filter(file =>
-        file.fileName.toLowerCase().includes(query.toLowerCase())
-    );
-    filteredFiles = filteredFiles.concat(customDBFiles.filter(file =>
-        file.fileName.toLowerCase().includes(query.toLowerCase())
-    ));
-
-    console.log(filteredFiles);
-
-
-    helperText.textContent = `${filteredFiles.length} result${filteredFiles.length !== 1 ? 's' : ''} found`;
-
-    renderFilteredFileList(filteredFiles, query);
-}
-
 async function updateFileSelectionVisuals() {
     const fileItems = document.querySelectorAll('.file-item');
     fileItems.forEach(item => {
@@ -384,210 +759,7 @@ function getCustomFileButton(file: FileData, showText: boolean = true): HTMLElem
     return fileButton;
 }
 
-async function renderFilteredFileList(files: FileData[], query: string) {
-    const fileListDiv = document.getElementById('file-list') as HTMLDivElement;
-    fileListDiv.innerHTML = '';
-    const customContent = document.getElementById('custom-collections-container') as HTMLDivElement;
-    customContent.style.display = 'none';
-
-    if (files.length === 0) {
-        const noResults = document.createElement('article');
-        noResults.className = 'margin padding';
-        noResults.textContent = 'No results found.';
-        fileListDiv.appendChild(noResults);
-        return
-    }
-
-    const content = document.createElement('article');
-    content.className = "scroll margin";
-
-    const fragment = document.createDocumentFragment();
-
-    files.forEach(file => {
-        const escapedQuery = escapeRegExp(query);
-        const regex = new RegExp(`(${escapedQuery})`, 'gi');
-
-        const fileContainer = getFileButton(file);
-        const fileButton = fileContainer.querySelector('a') as HTMLAnchorElement;
-        fileButton.className = 'small-padding wave file-item wrap no-round grid';
-
-        const headline = fileButton.querySelector('h6') as HTMLHeadingElement;
-        headline.innerHTML = headline.innerHTML.replace(/<span class="highlight">(.*?)<\/span>/gi, '$1');
-        headline.innerHTML = headline.textContent!.replace(regex, '<span class="highlight">$1</span>');
-
-        const supportingText = document.createElement('p');
-        supportingText.className = "small s12 right-align";
-        supportingText.textContent = file.relativePath;
-        fileButton.appendChild(supportingText);
-
-        fragment.appendChild(fileContainer);
-
-        const divider = document.createElement('div');
-        divider.className = 'divider';
-        fragment.appendChild(divider);
-    });
-
-    content.appendChild(fragment);
-    fileListDiv.appendChild(content);
-    updateFileSelectionVisuals();
-}
-
-async function renderFileList(globalFiles: FileData[], globalDB: IDBDatabase, customFiles: FileData[], customDB: IDBDatabase) {
-    const globalFileListDiv = document.getElementById('file-list') as HTMLDivElement;
-    const customFileListDiv = document.getElementById('custom-collections-file-list') as HTMLDivElement;
-    const customCollectionsContainer = document.getElementById('custom-collections-container') as HTMLDivElement;
-    flattenedFileList = [];
-    const globalFileTree: { [key: string]: any } = {};
-    const customFileTree: { [key: string]: any } = {};
-
-    globalFileListDiv.innerHTML = '';
-    customFileListDiv.innerHTML = '';
-
-    if (customFiles.length > 0) {
-        customCollectionsContainer.style.display = 'block';
-    }else{
-        customCollectionsContainer.style.display = 'none';
-    }
-
-
-    const naturalSort = (a: string, b: string) => {
-        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-    };
-
-    globalFiles.forEach(file => {
-        const pathParts = file.relativePath.split('\\');
-        let currentLevel = globalFileTree;
-
-        pathParts.forEach((part, index) => {
-            if (!currentLevel[part]) {
-                currentLevel[part] = (index === pathParts.length - 1) ? [] : {};
-            }
-            currentLevel = currentLevel[part];
-        });
-
-        currentLevel.push(file);
-    });
-
-    customFiles.forEach(file => {
-        const pathParts = file.relativePath.split('\\');
-        let currentLevel = customFileTree;
-
-        pathParts.forEach((part, index) => {
-            if (!currentLevel[part]) {
-                currentLevel[part] = (index === pathParts.length - 1) ? [] : {};
-            }
-            currentLevel = currentLevel[part];
-        });
-
-        currentLevel.push(file);
-    });
-
-    const sortTree = (tree: any) => {
-        Object.keys(tree).forEach(key => {
-            if (Array.isArray(tree[key])) {
-                tree[key].sort((a: FileData, b: FileData) => naturalSort(a.fileName, b.fileName));
-            } else {
-                sortTree(tree[key]);
-            }
-        });
-    };
-
-    sortTree(globalFileTree);
-    sortTree(customFileTree);
-
-    flattenFileTree(globalFileTree);
-    flattenFileTree(customFileTree);
-
-    const createFileTree = (tree: any, depth: number = 0, customContent: boolean = false): DocumentFragment => {
-        const fragment = document.createDocumentFragment();
-
-        Object.keys(tree).sort(naturalSort).forEach(key => {
-            const value = tree[key];
-            const details = document.createElement('details');
-            details.className = 'small-margin small-round';
-
-            details.addEventListener('toggle', () => {
-                if (details.open) {
-                    summary.classList.add('primary');
-                    summary.classList.remove('fill');
-                } else {
-                    summary.classList.remove('primary');
-                    summary.classList.add('fill');
-                }
-            });
-
-            const summary = document.createElement('summary');
-            summary.className = 'none no-padding fill';
-
-            const groupElement = document.createElement('a');
-            groupElement.className = 'row wave padding small-round';
-
-            const imgElement = document.createElement('i');
-            const groupIcon = Array.isArray(value) ? "ri-book-shelf-line" : "ri-folder-fill";
-            imgElement.className = groupIcon;
-            groupElement.appendChild(imgElement);
-
-            const divElement = document.createElement('div');
-            divElement.className = 'max';
-
-            const groupNameElement = document.createElement('p');
-            groupNameElement.textContent = key;
-            divElement.appendChild(groupNameElement);
-
-            groupElement.appendChild(divElement);
-
-            summary.appendChild(groupElement);
-            details.appendChild(summary);
-
-            const lazyLoadContainer = document.createElement('div'); // Placeholder for lazy loading
-            details.appendChild(lazyLoadContainer);
-
-            details.addEventListener('toggle', () => {
-                if (details.open && !lazyLoadContainer.hasChildNodes()) {
-                    if (Array.isArray(value)) {
-                        const fileArticle = document.createElement('article');
-                        fileArticle.className = 'group-content no-border no-round no-padding';
-                        fileArticle.style.marginTop = '0px';
-
-                        value.forEach((file: FileData) => {
-                            if (customContent) {
-                                const fileButton = getCustomFileButton(file);
-                                fileArticle.appendChild(fileButton);
-                            } else {
-                                const fileButton = getFileButton(file);
-                                fileArticle.appendChild(fileButton);
-                            }
-                            const divider = document.createElement('div');
-                            divider.className = 'divider';
-                            fileArticle.appendChild(divider);
-                        });
-
-                        lazyLoadContainer.appendChild(fileArticle);
-                    } else {
-                        lazyLoadContainer.appendChild(createFileTree(value, depth + 1));
-                    }
-                }
-                updateFileSelectionVisuals();
-            });
-            fragment.appendChild(details);
-        });
-        return fragment;
-    };
-
-    const globalFileTreeFragment = createFileTree(globalFileTree, 0, false);
-    globalFileListDiv.appendChild(globalFileTreeFragment);
-
-    const customFileTreeFragment = createFileTree(customFileTree, 0, true);
-    customFileListDiv.appendChild(customFileTreeFragment);
-
-    const progressElement = document.querySelector('#progress-bar-container') as HTMLDivElement;
-    if (progressElement) {
-        progressElement.classList.add('hidden');
-        progressElement.style.display = 'none';
-    }
-}
-
-async function getAllFilesFromDB(db: IDBDatabase): Promise<FileData[]> {
+function getAllFilesFromDB(db: IDBDatabase): Promise<FileData[]> {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction('files', 'readonly');
         const store = transaction.objectStore('files');
@@ -603,41 +775,9 @@ async function getAllFilesFromDB(db: IDBDatabase): Promise<FileData[]> {
     });
 }
 
-function wrapInParagraphsWithSpans(htmlContent: string) {
-    const sections = htmlContent.split('<br><br>');
-
-    return sections.map(section => {
-        const lines = section.split('<br>');
-        const spanContent = lines.map(line => `<span>${line}</span>`).join('');
-
-        if (lines.length > 2) {
-            const id = lines[0].trim().toLowerCase().replace(/[^a-zA-Z0-9]+/g, '-');
-            return `<p id="${id}">${spanContent}</p>`;
-        } else {
-            return spanContent; // Return the single line as is without <p> tags
-        }
-    }).join('');
-}
-
-async function displaySingAlongFileContent(file: FileData) {
-    try {
-        const fileContentDiv = document.getElementById('sing-along-file-content') as HTMLDivElement;
-        const fileNameHeader = document.getElementById('sing-along-file-name-header') as HTMLHeadingElement;
-        if (file) {
-            const formattedContent = file.fileContent.replace(/\n/g, '<br>');
-            fileNameHeader.textContent = file.fileName.replace('.txt', '');
-            fileContentDiv.innerHTML = wrapInParagraphsWithSpans(formattedContent);
-        } else {
-            fileContentDiv.textContent = 'File not found in IndexedDB.';
-        }
-    } catch (error) {
-        console.error("Error retrieving file from IndexedDB:", error);
-    }
-}
-
 async function displayFileContent(file: FileData) {
     try {
-        currentParagraphIndex = 0;
+        this.currentParagraphIndex = 0;
         currentSongIndex = flattenedFileList.findIndex(song => song === file); // Set the current index
         const fileContentDiv = document.getElementById('file-content') as HTMLDivElement;
         const fileNameHeader = document.getElementById('file-name-header') as HTMLHeadingElement;
@@ -677,12 +817,6 @@ function updateIcon(mode: string) {
         iconElement.textContent = mode === "dark" ? "light_mode" : "dark_mode";
     });
 };
-
-function updateFontSize(size: number) {
-    const fileContentDiv = document.getElementById('file-content') as HTMLDivElement;
-    fileContentDiv.style.fontSize = `${size}px`;
-    localStorage.setItem('fontSize', size.toString());
-}
 
 function getFontSize(): number {
     return parseInt(localStorage.getItem('fontSize') || '16', 10);
@@ -738,44 +872,7 @@ function showErrorSnackbar(message: string) {
     ui('#error-snackbar', 6000);
 }
 
-function initializeFileContent() {
-    const fileContentDiv = document.getElementById('file-content') as HTMLDivElement;
-    fileContentDiv.style.fontSize = `${getFontSize()}px`;
-    if (focusEnabled) {
-        focusParagraph(0);
-    }
-}
-
-function removeFocusFromAllParagraphs() {
-    const paragraphs = document.querySelectorAll('#file-content p') as NodeListOf<HTMLParagraphElement>;
-    paragraphs.forEach(p => {
-        p.classList.remove('active-paragraph');
-        p.classList.remove('blur');
-        p.classList.remove('blur-none');
-    });
-}
-
-function moveToPreviousParagraph() {
-    const paragraphs = document.querySelectorAll('#file-content p') as NodeListOf<HTMLParagraphElement>;
-
-    currentParagraphIndex--;
-    if (currentParagraphIndex < 0) {
-        currentParagraphIndex = paragraphs.length - 1;
-    }
-    focusParagraph(currentParagraphIndex);
-}
-
-function moveToNextParagraph() {
-    const paragraphs = document.querySelectorAll('#file-content p') as NodeListOf<HTMLParagraphElement>;
-
-    currentParagraphIndex++;
-    if (currentParagraphIndex >= paragraphs.length) {
-        currentParagraphIndex = 0;
-    }
-    focusParagraph(currentParagraphIndex);
-}
-
-async function moveToPreviousSong() {
+function moveToPreviousSong() {
     if (currentSongIndex > 0) {
         currentSongIndex--;
         const previousSong = flattenedFileList[currentSongIndex];
@@ -783,49 +880,11 @@ async function moveToPreviousSong() {
     }
 }
 
-async function moveToNextSong() {
+function moveToNextSong() {
     if (currentSongIndex < flattenedFileList.length - 1) {
         currentSongIndex++;
         const nextSong = flattenedFileList[currentSongIndex];
         displayFileContent(nextSong);
-    }
-}
-
-function searchSongContents() {
-    const inputBox = document.getElementById('search-song-content-input') as HTMLInputElement;
-    const query = inputBox.value.trim();
-    const fileContentDiv = document.getElementById('file-content') as HTMLDivElement;
-    const helperSpan = document.querySelector('#search-song .helper') as HTMLElement;
-
-    const paragraphs = fileContentDiv.querySelectorAll('p');
-    let totalMatches = 0;
-
-    paragraphs.forEach(paragraph => {
-        const spans = paragraph.querySelectorAll('span');
-
-        spans.forEach(span => {
-            span.innerHTML = span.innerHTML.replace(/<span class="highlight">(.*?)<\/span>/gi, '$1');
-
-            if (query === '') {
-                return;
-            }
-
-            const escapedQuery = escapeRegExp(query);
-            const regex = new RegExp(`(${escapedQuery})`, 'gi');
-
-            const matches = [...span.textContent!.matchAll(regex)];
-            totalMatches += matches.length;
-
-            if (matches.length > 0) {
-                span.innerHTML = span.innerHTML.replace(regex, '<span class="highlight">$1</span>');
-            }
-        });
-    });
-
-    if (query === '') {
-        helperSpan.textContent = ''; // Clear helper text if query is empty
-    } else {
-        helperSpan.textContent = `${totalMatches} result${totalMatches !== 1 ? 's' : ''} found`;
     }
 }
 
@@ -887,7 +946,7 @@ async function hashChanged() {
 async function toggleFocus() {
     focusEnabled = !focusEnabled;
     if (focusEnabled) {
-        focusParagraph(currentParagraphIndex);
+        focusParagraph(this.currentParagraphIndex);
     } else {
         removeFocusFromAllParagraphs();
         const fileContent = document.getElementById('file-content');
@@ -1003,7 +1062,7 @@ function createSingAlong(singAlongId: string, description: string, isPrivate: bo
                 endSingAlongButton.style.display = 'inline-flex';
             }
         });
-    }else{
+    } else {
         if (singAlongId && socket) {
             const data: SingAlongData = {
                 action: 'create',
@@ -1098,7 +1157,7 @@ function leaveSingAlong() {
     const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
     const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
 
-    if (socket){
+    if (socket) {
         const data: SingAlongData = {
             action: 'leave'
         };
@@ -1123,7 +1182,7 @@ function endSingAlong() {
     const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
     const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
 
-    if (socket){
+    if (socket) {
         const data: SingAlongData = {
             action: 'end'
         };
@@ -1175,6 +1234,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
     const syncSingAlongButton = document.querySelector('#sing-along-sync') as HTMLButtonElement;
 
+    const homePage = new HomePage('home');
+    const songPage = new SongPage('song')
+    const singAlongPage = new SingAlongPage('sing-along-page');
+
     if (isMobileDevice()) {
         installIcon.textContent = `install_mobile`;
     } else {
@@ -1203,7 +1266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (targetPageId === '#song') {
                 if (focusEnabled) {
-                    focusParagraph(currentParagraphIndex);
+                    focusParagraph(this.currentParagraphIndex);
                 }
             }
             if (targetPageId === '#song') {
@@ -1320,7 +1383,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         customDBFiles = await fetchCustomCollectionFiles(customDB, customFolders),
 
-        await renderFileList(globalDBFiles, globalDB, customDBFiles, customDB);
+            await renderFileList(globalDBFiles, globalDB, customDBFiles, customDB);
 
         showSuccessSnackbar('Collections updated successfully.');
     });
@@ -1360,7 +1423,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 filesToUpload.push(file);
             }
         }
-        if (selectedFiles.size <= 0){
+        if (selectedFiles.size <= 0) {
             showErrorSnackbar('No files selected.');
             return;
         }
@@ -1410,7 +1473,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const customFolders = getCustomFoldersFromLocalStorage();
 
                 customDBFiles = await fetchCustomCollectionFiles(customDB, customFolders),
-                publicFolders = await fetchAllPublicFolders();
+                    publicFolders = await fetchAllPublicFolders();
 
                 await renderFileList(globalDBFiles, globalDB, customDBFiles, customDB);
 
@@ -1565,7 +1628,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         joinSingAlong(savedSingAlongId, isHost);
         if (isHost) {
             showSuccessSnackbar('Sing-Along host status restored.');
-        }else{
+        } else {
             showSuccessSnackbar('Sing-Along re-joined.');
             getSong();
         }
@@ -1602,7 +1665,7 @@ async function init() {
                             console.log('New version detected, updating cache...');
                         }
                         localStorage.setItem('latestVersion', VERSION);
-                    }else{
+                    } else {
                         if (registration.active) {
                             registration.active.postMessage({ action: 'updateCache' });
                             console.log('Version check passed, updating cache...');
