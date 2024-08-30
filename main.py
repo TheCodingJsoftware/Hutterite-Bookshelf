@@ -228,42 +228,51 @@ class PublicFoldersHandler(tornado.web.RequestHandler):
 class PublicSingAlongsHandler(tornado.web.RequestHandler):
     def get(self):
         public_sing_alongs = [
-            {"name": key, "description": value["description"]}
-            for key, value in sing_alongs.items() if not value["private"]
+            {"name": key, "description": value.description}
+            for key, value in sing_alongs.items() if not value.private
         ]
         self.write(json.dumps(public_sing_alongs))
 
 
 class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
-    def open(self):
+    async def open(self):
         self.sing_along_id = None
         self.is_host = False
 
-    def on_message(self, message):
+    async def on_message(self, message):
         data = json.loads(message)
         action = data.get("action")
 
         if action == "create":
-            self.create_sing_along(data)
+            await self.create_sing_along(data)
         elif action == "join":
-            self.join_sing_along(data)
+            await self.join_sing_along(data)
         elif action == "change_song":
-            self.change_song(data)
+            await self.change_song(data)
+        elif action == "get_song":
+            await self.get_song(data)
         elif action == "leave":
-            self.leave_sing_along()
+            await self.leave_sing_along()
         elif action == "end":
-            self.end_sing_along()
+            await self.end_sing_along()
         elif action == "sync":
-            self.sync_client()
+            await self.sync_client()
 
-    def create_sing_along(self, data: dict[str, str | bool | list[str]]):
+    async def create_sing_along(self, data: dict[str, Union[str, bool, list[str]]]):
         sing_along = SingAlong(self)
-        sing_along.description = data.get("description")
-        sing_along.song_list = data.get("song_list")
-        sing_along.private = data.get("private")
+        sing_along.description = data.get("description", "Unspecified description")
+        sing_along.song_list = data.get("song_list", [])
+        sing_along.private = data.get("private", False)
         sing_along.current_song = sing_along.song_list[0] if sing_along.song_list else None
 
-        sing_along_id = data.get("sing_along_id")
+        sing_along_id: str = data.get("sing_along_id")
+        if not sing_along_id:
+            self.write_message({"action": "error", "message": "Sing-along ID is required"})
+            return
+
+        if sing_alongs.get(sing_along_id):
+            self.write_message({"action": "error", "message": "Sing-along ID already exists"})
+            return
 
         sing_alongs[sing_along_id] = sing_along
 
@@ -271,67 +280,86 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
         self.is_host = True
         self.write_message({"action": "created", "sing_along_id": sing_along_id})
 
-    def join_sing_along(self, data):
+    async def join_sing_along(self, data):
         sing_along_id = data.get("sing_along_id")
-        if sing_along := sing_alongs.get(sing_along_id):
+        is_host = data.get("is_host")
+        if not sing_along_id:
+            self.write_message({"action": "error", "message": "Sing-along ID is required"})
+            return
+
+        sing_along = sing_alongs.get(sing_along_id)
+        if sing_along:
             self.sing_along_id = sing_along_id
-            if data.get("host_password") == sing_alongs[sing_along_id]:
+            if is_host:
+                sing_along.host = self
                 self.is_host = True
             else:
                 sing_along.clients.append(self)
-            played_songs_list = list(sing_along["played_songs"])
-            song_list = sing_along["song_list"]
-            self.write_message({"action": "joined", "sing_along_id": sing_along_id, "current_song": sing_along["current_song"], "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
+            played_songs_list = list(sing_along.played_songs)
+            song_list = sing_along.song_list
+            self.write_message({"action": "joined", "sing_along_id": sing_along_id, "current_song": sing_along.current_song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
         else:
             self.write_message({"action": "error", "message": "Sing-along not found"})
 
-    def change_song(self, data):
-        sing_along_id = self.sing_along_id
-        song = data.get("song")
+    async def change_song(self, data):
+        if not self.sing_along_id:
+            self.write_message({"action": "error", "message": "You are not in a sing-along"})
+            return
 
-        if sing_along_id and sing_along_id in sing_alongs:
-            sing_along = sing_alongs[sing_along_id]
+        song = data.get("song")
+        if not song:
+            self.write_message({"action": "error", "message": "Song is required"})
+            return
+
+        sing_along = sing_alongs.get(self.sing_along_id)
+        if sing_along:
             sing_along.current_song = song
             sing_along.played_songs.add(song)
             sing_along.last_activity = datetime.now()
 
-            played_songs_list = list(sing_along["played_songs"])
-            song_list = sing_along["song_list"]
+            played_songs_list = list(sing_along.played_songs)
+            song_list = sing_along.song_list
             for client in sing_along.clients:
-                client.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
-            self.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
+                await client.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
+            self.write_message({"action": "sync", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
 
-    def sync_client(self):
+    async def get_song(self, data):
         if self.sing_along_id and self.sing_along_id in sing_alongs:
             sing_along = sing_alongs[self.sing_along_id]
-            song = sing_along["current_song"]
-            played_songs_list = list(sing_along["played_songs"])
-            song_list = sing_along["song_list"]
-            self.write_message({"action": "sync", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along["clients"])})
+            song = sing_along.current_song
+            self.write_message({"action": "get_song", "song": song})
 
-    def leave_sing_along(self):
+    async def sync_client(self):
         if self.sing_along_id and self.sing_along_id in sing_alongs:
             sing_along = sing_alongs[self.sing_along_id]
+            song = sing_along.current_song
+            played_songs_list = list(sing_along.played_songs)
+            song_list = sing_along.song_list
+            self.write_message({"action": "sync", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
 
-            sing_along["clients"].remove(self)
+    async def leave_sing_along(self):
+        if self.sing_along_id and self.sing_along_id in sing_alongs:
+            sing_along = sing_alongs[self.sing_along_id]
+            sing_along.clients.remove(self)
             self.write_message({"action": "left"})
 
-    def end_sing_along(self):
+    async def end_sing_along(self):
         if self.is_host and self.sing_along_id and self.sing_along_id in sing_alongs:
             sing_along = sing_alongs[self.sing_along_id]
-            for client in sing_along["clients"]:
-                client.write_message({"action": "end_sing_along"})
+            for client in sing_along.clients:
+                await client.write_message({"action": "end_sing_along"})
             del sing_alongs[self.sing_along_id]
             self.sing_along_id = None
 
     def on_close(self):
         if self.sing_along_id and self.sing_along_id in sing_alongs:
-            if sing_along := sing_alongs[self.sing_along_id]:
-                sing_along.clients.remove(self)
-                if self.is_host:
-                    for client in sing_along.clients:
-                        client.write_message({"action": "end_sing_along"})
-                    del sing_alongs[self.sing_along_id]
+            sing_along = sing_alongs[self.sing_along_id]
+            sing_along.clients.remove(self)
+            if self.is_host:
+                for client in sing_along.clients:
+                    client.write_message({"action": "end_sing_along"})
+                del sing_alongs[self.sing_along_id]
+
 
 
 def make_app():
@@ -346,7 +374,7 @@ def make_app():
             (r"/api/public_folders", PublicFoldersHandler),
             (r"/ws", SingAlongWebSocket),
             (r"/version", VersionHandler),
-            (r"/public_sing_alongs", PublicSingAlongsHandler),
+            (r"/api/public_sing_alongs", PublicSingAlongsHandler),
         ],
         static_path=os.path.join(os.path.dirname(__file__), "static"),
     )
@@ -354,11 +382,11 @@ def make_app():
 
 def check_inactive_sessions():
     now = datetime.now()
-    inactive_sing_alongs = [id for id, sa in sing_alongs.items() if now - sa["last_activity"] > INACTIVITY_TIMEOUT]
+    inactive_sing_alongs = [id for id, sa in sing_alongs.items() if now - sa.last_activity > INACTIVITY_TIMEOUT]
 
     for sing_along_id in inactive_sing_alongs:
         sing_along = sing_alongs[sing_along_id]
-        for client in sing_along["clients"]:
+        for client in sing_along.clients:
             client.write_message({"action": "end_sing_along"})
         del sing_alongs[sing_along_id]
 

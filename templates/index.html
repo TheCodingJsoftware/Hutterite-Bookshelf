@@ -85,6 +85,43 @@
 </dialog>
 
 <div class="overlay blur"></div>
+<dialog id="create-sing-along-dialog">
+    <h5 class="small center-align">Create a Sing-Along</h5>
+    <div class="padding">
+        <div class="field label border">
+            <input type="text" id="sing-along-id-label" autocomplete="off">
+            <label>Sing-Along ID</label>
+        </div>
+        <div class="field textarea label border">
+            <textarea id="sing-along-description-label" autocomplete="off"></textarea>
+            <label>Description</label>
+            <span class="helper">(Optional) Let people know what this Sing-Along is about.</span>
+        </div>
+        <br>
+        <label class="checkbox">
+            <input type="checkbox" id="sing-along-is-private-checkbox" autocomplete="off">
+            <span>Is Private</span>
+        </label>
+
+    </div>
+    <nav class="right-align no-space">
+        <button class="small-round" id="create-sing-along-submit">
+            <i>check</i>
+            <span>Create</span>
+        </button>
+    </nav>
+</dialog>
+
+<div class="overlay blur"></div>
+<dialog id="join-sing-along-dialog">
+    <h5 class="small center-align">Join a Sing-Along</h5>
+    <div class="padding">
+        <p>Select a Sing-Along to join</p>
+        <article class="scroll padding" id="sing-along-id-container"></article>
+    </div>
+</dialog>
+
+<div class="overlay blur"></div>
 <dialog class="max" id="add-song-dialog">
     <h5 class="small center-align">Add Songs</h5>
     <div class="field label prefix border">
@@ -163,6 +200,7 @@
                 <div class="padding" id="custom-collections-file-list"></div>
             </div>
         </div>
+
         <div class="page" id="song">
             <div class="field label prefix border margin" id="search-song">
                 <i>search</i>
@@ -173,12 +211,21 @@
             <h5 id="file-name-header" class="padding"></h5>
             <div id="file-content" class="padding scroll">Select a song from the home page</div>
         </div>
+
         <div class="page" id="sing-along-page">
             <div class="padding center-align middle-align transparent">
-                <button class="small-round" id="sing-along-join">
-                    <i>adaptive_audio_mic</i>
-                    <span>Join a Sing-Along</span>
-                </button>
+                <div class="grid">
+                    <button class="small-round s6" id="sing-along-create">
+                        <i>group_add</i>
+                        <span>Create</span>
+                    </button>
+                    <button class="small-round s6" id="sing-along-join">
+                        <i>adaptive_audio_mic</i>
+                        <span>Join</span>
+                    </button>
+                    <h5 id="sing-along-file-name-header" class="padding s12 left-align"></h5>
+                    <div id="sing-along-file-content" class="padding scroll s12 left-align"></div>
+                </div>
             </div>
         </div>
     </main>
@@ -237,11 +284,14 @@
 
 <footer class="fixed" id="sing-along-nav" style="display: none;">
     <nav class="bottom">
-        <button class="circle transparent" id="sing-along-logout">
+        <button class="circle transparent" id="sing-along-logout" style="display: none;">
+            <i>logout</i>
+        </button>
+        <button class="circle transparent" id="sing-along-end" style="display: none;">
             <i>logout</i>
         </button>
         <div class="max"></div>
-        <button class="square round extra" id="sing-along-sync">
+        <button class="square round extra" id="sing-along-sync" style="display: none;">
             <i>sync</i>
         </button>
     </nav>

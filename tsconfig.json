@@ -4,6 +4,7 @@
         "target": "ES6",
         "moduleResolution": "node",
         "outDir": "./dist",
+        "rootDir": "./src",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
         "strict": true,

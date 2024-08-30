@@ -9,9 +9,20 @@ interface FileData {
     relativePath: string;
     fileContent: string;
     isPrivate: boolean;
-}interface FolderData {
+}
+
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+interface FolderData {
     folderName: string;
     adminAccess: boolean;
+}
+interface SingAlongData {
+    action: string;
+    [key: string]: any;
 }
 
 let selectedFiles = new Set<string>();
@@ -26,11 +37,12 @@ let isSelectableMode = false;
 let publicFolders: string[] = [];
 const LONG_PRESS_DURATION = 500; // Duration in milliseconds to consider a long press
 let longPressTimer: number | null = null;
+const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const socketUrl = `${protocol}//${window.location.host}/ws`;
+let socket: WebSocket | null = null;
 
-interface BeforeInstallPromptEvent extends Event {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+
+
 
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
@@ -607,6 +619,22 @@ function wrapInParagraphsWithSpans(htmlContent: string) {
     }).join('');
 }
 
+async function displaySingAlongFileContent(file: FileData) {
+    try {
+        const fileContentDiv = document.getElementById('sing-along-file-content') as HTMLDivElement;
+        const fileNameHeader = document.getElementById('sing-along-file-name-header') as HTMLHeadingElement;
+        if (file) {
+            const formattedContent = file.fileContent.replace(/\n/g, '<br>');
+            fileNameHeader.textContent = file.fileName.replace('.txt', '');
+            fileContentDiv.innerHTML = wrapInParagraphsWithSpans(formattedContent);
+        } else {
+            fileContentDiv.textContent = 'File not found in IndexedDB.';
+        }
+    } catch (error) {
+        console.error("Error retrieving file from IndexedDB:", error);
+    }
+}
+
 async function displayFileContent(file: FileData) {
     try {
         currentParagraphIndex = 0;
@@ -630,6 +658,11 @@ async function displayFileContent(file: FileData) {
                 focusParagraph(0);
             }
             searchSongContents();
+            const singAlongId = localStorage.getItem('sing_along_id');
+            const isHost = localStorage.getItem('is_host') === 'true';
+            if (singAlongId && isHost) {
+                changeSong(file.fileName);
+            }
         } else {
             fileContentDiv.textContent = 'File not found in IndexedDB.';
         }
@@ -887,7 +920,245 @@ async function addFileToCustomDB(db: IDBDatabase, fileData: FileData) {
     });
 }
 
+function setupWebSocket(onOpenCallback?: () => void) {
+    socket = new WebSocket(socketUrl);
+
+    socket.onopen = () => {
+        if (onOpenCallback) {
+            onOpenCallback();
+        }
+    };
+
+    socket.onmessage = (event) => {
+        const data: SingAlongData = JSON.parse(event.data);
+        console.log(data);
+        handleWebSocketMessage(data);
+    };
+
+    socket.onclose = () => {
+        console.log('WebSocket connection closed');
+    };
+
+    socket.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+}
+
+
+function handleWebSocketMessage(data: SingAlongData) {
+    switch (data.action) {
+        case 'created':
+            localStorage.setItem('sing_along_id', data.sing_along_id);
+            localStorage.setItem('is_host', 'true');
+            break;
+        case 'joined':
+            localStorage.setItem('sing_along_id', data.sing_along_id);
+            localStorage.setItem('is_host', 'false');
+            getSong();
+            break;
+        case 'change_song':
+            updateUIWithNewSong(data.song);
+            break;
+        case 'get_song':
+            const songData = getFileDataFromSongName(data.song);
+            if (songData) {
+                displaySingAlongFileContent(songData);
+            }
+            break;
+        case 'sync':
+            syncClient(data);
+            break;
+        case 'end_sing_along':
+            endSingAlong();
+            break;
+        default:
+            console.log('Unknown action:', data.action);
+            showErrorSnackbar(data.message);
+            localStorage.removeItem('sing_along_id');
+            localStorage.removeItem('is_host');
+    }
+}
+
+function createSingAlong(singAlongId: string, description: string, isPrivate: boolean, songList: string[]) {
+    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
+    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
+    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
+    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
+
+    if (!socket) {
+        setupWebSocket(() => {
+            if (singAlongId && socket) {
+                const data: SingAlongData = {
+                    action: 'create',
+                    sing_along_id: singAlongId,
+                    description: description,
+                    song_list: songList,
+                    private: isPrivate
+                };
+                socket.send(JSON.stringify(data));
+
+                createSingAlongButton.style.display = 'none';
+                joinSingAlongButton.style.display = 'none';
+                leaveSingAlongButton.style.display = 'none';
+                endSingAlongButton.style.display = 'inline-flex';
+            }
+        });
+    }else{
+        if (singAlongId && socket) {
+            const data: SingAlongData = {
+                action: 'create',
+                sing_along_id: singAlongId,
+                description: description,
+                song_list: songList,
+                private: isPrivate
+            };
+            socket.send(JSON.stringify(data));
+
+            createSingAlongButton.style.display = 'none';
+            joinSingAlongButton.style.display = 'none';
+            leaveSingAlongButton.style.display = 'none';
+            endSingAlongButton.style.display = 'inline-flex';
+        }
+    }
+}
+
+function joinSingAlong(singAlongId: string, isHost: boolean = false) {
+    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
+    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
+    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
+    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
+
+    if (!socket) {
+        setupWebSocket(() => {
+            if (singAlongId && socket) {
+                const data: SingAlongData = {
+                    action: 'join',
+                    sing_along_id: singAlongId,
+                    is_host: isHost
+                };
+                socket.send(JSON.stringify(data));
+                createSingAlongButton.style.display = 'none';
+                joinSingAlongButton.style.display = 'none';
+                leaveSingAlongButton.style.display = 'inline-flex';
+                endSingAlongButton.style.display = 'none';
+            }
+        });
+    } else {
+        if (singAlongId && socket) {
+            const data: SingAlongData = {
+                action: 'join',
+                sing_along_id: singAlongId,
+                is_host: isHost
+            };
+            socket.send(JSON.stringify(data));
+            createSingAlongButton.style.display = 'none';
+            joinSingAlongButton.style.display = 'none';
+            leaveSingAlongButton.style.display = 'inline-flex';
+            endSingAlongButton.style.display = 'none';
+        }
+    }
+}
+
+
+function changeSong(song: string) {
+    if (socket) {
+        const data: SingAlongData = {
+            action: 'change_song',
+            song: song
+        };
+        socket.send(JSON.stringify(data));
+    }
+}
+
+function getSong() {
+    if (socket) {
+        const data: SingAlongData = {
+            action: 'get_song',
+        };
+        socket.send(JSON.stringify(data));
+    }
+}
+
+function syncClient(data: any) {
+    const singAlongId = localStorage.getItem('sing_along_id');
+    const isHost = localStorage.getItem('is_host') === 'true';
+    if (singAlongId && !isHost) {
+        const songData = getFileDataFromSongName(data.current_song);
+        if (songData) {
+            displaySingAlongFileContent(songData);
+        }
+        showSuccessSnackbar('Synced with Sing-Along.');
+    }
+}
+
+// Example function to leave the sing-along
+function leaveSingAlong() {
+    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
+    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
+    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
+    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
+
+    if (socket){
+        const data: SingAlongData = {
+            action: 'leave'
+        };
+        socket.send(JSON.stringify(data));
+        socket.close();
+        socket = null;
+    }
+    localStorage.removeItem('sing_along_id');
+    localStorage.removeItem('is_host');
+    showSuccessSnackbar('Left Sing-Along.');
+
+    createSingAlongButton.style.display = 'inline-flex';
+    joinSingAlongButton.style.display = 'inline-flex';
+    leaveSingAlongButton.style.display = 'none';
+    endSingAlongButton.style.display = 'none';
+}
+
+// Example function to end the sing-along
+function endSingAlong() {
+    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
+    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
+    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
+    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
+
+    if (socket){
+        const data: SingAlongData = {
+            action: 'end'
+        };
+        socket.send(JSON.stringify(data));
+        socket.close();
+        socket = null;
+    }
+    localStorage.removeItem('sing_along_id');
+    localStorage.removeItem('is_host');
+
+    showSuccessSnackbar('Sing-Along ended.');
+    createSingAlongButton.style.display = 'inline-flex';
+    joinSingAlongButton.style.display = 'inline-flex';
+    leaveSingAlongButton.style.display = 'none';
+    endSingAlongButton.style.display = 'none';
+}
+
+function updateUIWithNewSong(song: string) {
+    console.log('Now playing:', song);
+    const songData = getFileDataFromSongName(song);
+    if (songData) {
+        displaySingAlongFileContent(songData);
+    }
+}
+
+function getFileDataFromSongName(songName: string): FileData | undefined {
+    const fileData = flattenedFileList.find(file => file.fileName === songName);
+    return fileData;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+    const VERSION = localStorage.getItem('latestVersion') || '1.0.0';
+    const appNameVersion = document.getElementById('app-name-version') as HTMLHeadingElement;
+    appNameVersion.textContent = `Hutterite Bookshelf v${VERSION}`;
+
     const tabs = document.querySelectorAll('.tabs a');
     const songNav = document.getElementById('song-nav') as HTMLElement;
     const songsNav = document.getElementById('home-nav') as HTMLElement;
@@ -897,6 +1168,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const customFolderList = document.getElementById('custom-folders-list') as HTMLDivElement;
     const installPWA = document.getElementById('install-pwa') as HTMLButtonElement;
     const installIcon = installPWA.querySelector('i') as HTMLElement;
+    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
+    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
+    const createSingAlongSubmitButton = document.querySelector('#create-sing-along-submit') as HTMLButtonElement;
+    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
+    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
+    const syncSingAlongButton = document.querySelector('#sing-along-sync') as HTMLButtonElement;
 
     if (isMobileDevice()) {
         installIcon.textContent = `install_mobile`;
@@ -1047,7 +1324,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         showSuccessSnackbar('Collections updated successfully.');
     });
-
     document.querySelector('#add-group')?.addEventListener('click', () => {
         const selectedFilesList = document.getElementById('selected-songs-list') as HTMLElement;
         let count = 1;
@@ -1147,9 +1423,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             showErrorSnackbar('Error sending request: ' + error);
         }
     });
-    document.querySelector('#sing-along-join')?.addEventListener('click', async () => {
-        showSuccessSnackbar("Coming soon...");
-    });
     document.querySelector('#add-group-dialog-close')?.addEventListener('click', () => {
         ui('#add-song-dialog');
     });
@@ -1184,6 +1457,71 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelector('#toggle-theme')?.addEventListener('click', toggleTheme);
     document.querySelector('#previous-song')?.addEventListener('click', moveToPreviousSong);
     document.querySelector('#next-song')?.addEventListener('click', moveToNextSong);
+    document.querySelector('#sing-along-create')?.addEventListener('click', () => {
+        ui('#create-sing-along-dialog');
+    });
+    joinSingAlongButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        await fetch('/api/public_sing_alongs')
+            .then(response => response.json())
+            .then(data => {
+                const singAlongs = data.map((singAlong: { name: string; description: string; }) => {
+                    return {
+                        name: singAlong.name,
+                        description: singAlong.description,
+                    };
+                });
+                const singAlongIdContainer = document.getElementById('sing-along-id-container') as HTMLDivElement;
+                singAlongIdContainer.innerHTML = '';
+                const singAlongSelect = document.getElementById('sing-along-id-container') as HTMLDivElement;
+                singAlongs.forEach((singAlong: { name: string; description: string; }) => {
+                    const button: HTMLButtonElement = document.createElement('button');
+                    const icon = document.createElement('i');
+                    icon.textContent = 'login';
+                    const span = document.createElement('span');
+                    span.textContent = singAlong.name + ' - ' + singAlong.description;
+                    button.appendChild(icon);
+                    button.appendChild(span);
+                    button.className = "small-round responsive left-align";
+                    button.id = singAlong.name;
+                    button.addEventListener('click', () => {
+                        const isHost = localStorage.getItem('is_host') === 'true';
+                        joinSingAlong(singAlong.name, isHost);
+                        createSingAlongButton.style.display = 'none';
+                        joinSingAlongButton.style.display = 'none';
+                        leaveSingAlongButton.style.display = 'inline-flex';
+                        endSingAlongButton.style.display = 'none';
+                        syncSingAlongButton.style.display = 'inline-flex';
+                        ui('#join-sing-along-dialog');
+                    });
+                    singAlongSelect.appendChild(button);
+                });
+            });
+        ui('#join-sing-along-dialog');
+    });
+    createSingAlongSubmitButton.addEventListener('click', () => {
+        const singAlongInput = document.getElementById('sing-along-id-label') as HTMLInputElement;
+        const singAlongDescriptionInput = document.getElementById('sing-along-description-label') as HTMLTextAreaElement;
+        const singAlongIsPrivateInput = document.getElementById('sing-along-is-private-checkbox') as HTMLInputElement;
+        const singAlongId = singAlongInput.value.trim();
+        const singAlongDescription = singAlongDescriptionInput.value.trim();
+        const singAlongIsPrivate = singAlongIsPrivateInput.checked;
+        createSingAlong(singAlongId, singAlongDescription, singAlongIsPrivate, []);
+        ui('#create-sing-along-dialog');
+    });
+    endSingAlongButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        endSingAlong();
+    });
+    leaveSingAlongButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        leaveSingAlong();
+    });
+    syncSingAlongButton.addEventListener('click', async (event) => {
+        event.preventDefault();
+        // syncClient();
+    });
+
     document.querySelector('#song')?.addEventListener('dblclick', (event) => {
         const mouseEvent = event as MouseEvent; // Explicitly cast the event to MouseEvent
         const songsPage = mouseEvent.currentTarget as HTMLElement;
@@ -1219,6 +1557,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             filterSongs(query);
         }, 300);
     });
+
+    const savedSingAlongId = localStorage.getItem('sing_along_id');
+    const isHost = localStorage.getItem('is_host') === 'true';
+
+    if (savedSingAlongId) {
+        joinSingAlong(savedSingAlongId, isHost);
+        if (isHost) {
+            showSuccessSnackbar('Sing-Along host status restored.');
+        }else{
+            showSuccessSnackbar('Sing-Along re-joined.');
+            getSong();
+        }
+    }
     initializeFileContent();
 });
 
@@ -1227,18 +1578,21 @@ async function init() {
         if ('serviceWorker' in navigator) {
             try {
                 const registration = await navigator.serviceWorker.register('/serviceWorker.js', { scope: '/' });
+
                 console.log('ServiceWorker registration successful with scope: /');
 
                 if (navigator.onLine) {
                     const response = await fetch('/version');
                     const data = await response.json();
+                    const VERSION: string = data.version;
+
                     const currentVersion = localStorage.getItem('latestVersion');
 
-                    if (currentVersion !== data.version) {
+                    if (currentVersion !== VERSION) {
                         navigator.serviceWorker.addEventListener('message', event => {
                             if (event.data.action === 'cacheUpdated') {
                                 setTimeout(() => {
-                                    showUpdateCompleteSnackbar(`Update available: v${data.version}`);
+                                    showUpdateCompleteSnackbar(`Update available: v${VERSION}`);
                                 }, 5000);
                             }
                         });
@@ -1247,7 +1601,7 @@ async function init() {
                             registration.active.postMessage({ action: 'newUpdateCache' });
                             console.log('New version detected, updating cache...');
                         }
-                        localStorage.setItem('latestVersion', data.version);
+                        localStorage.setItem('latestVersion', VERSION);
                     }else{
                         if (registration.active) {
                             registration.active.postMessage({ action: 'updateCache' });
@@ -1261,9 +1615,6 @@ async function init() {
                 console.log('ServiceWorker registration failed: ', error);
             }
         }
-        const VERSION = localStorage.getItem('latestVersion') || '1.0.0';
-        const appNameVersion = document.getElementById('app-name-version') as HTMLHeadingElement;
-        appNameVersion.textContent = `Hutterite Bookshelf v${VERSION}`;
 
         // Initialize databases and fetch data
         const customFolders = getCustomFoldersFromLocalStorage();
