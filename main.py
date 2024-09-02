@@ -27,23 +27,23 @@ env = jinja2.Environment(loader=loader)
 sing_alongs: dict[str, "SingAlong"] = {}
 
 GLOBAL_TABLES = [
-    'abend & morgen',
-    'alleluia sing\\german',
-    'hymns\\english',
-    'hymns\\german',
-    'kleine gesangbuch',
-    'lutherische gesangbuch',
-    'stories',
-    'alleluia sing\\english',
-    'vaterlieder',
+    "abend & morgen",
+    "alleluia sing\\german",
+    "hymns\\english",
+    "hymns\\german",
+    "kleine gesangbuch",
+    "lutherische gesangbuch",
+    "stories",
+    "alleluia sing\\english",
+    "vaterlieder",
 ]
 
 CUSTOM_COLLECTION_TABLES = [
-    'custom collections',
+    "custom collections",
 ]
 
 INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
-VERSION = '0.0.4'
+VERSION = "0.0.4"
 
 
 POSTGRES_USER = os.environ.get("POSTGRES_USER")
@@ -91,6 +91,7 @@ class MainHandler(tornado.web.RequestHandler):
         rendered_template = template.render()
         self.write(rendered_template)
 
+
 class PrivacyPolicyHandler(tornado.web.RequestHandler):
     def get(self):
         template = env.get_template("privacy_policy.html")
@@ -100,7 +101,7 @@ class PrivacyPolicyHandler(tornado.web.RequestHandler):
 
 class ServiceWorkerHandler(tornado.web.RequestHandler):
     def get(self):
-        self.set_header('Content-Type', 'application/javascript')
+        self.set_header("Content-Type", "application/javascript")
         with open("serviceWorker.js", "r") as file:
             script = file.read()
             # script = re.sub(r"const VERSION = '.*?';", f"const VERSION = '{VERSION}';", script)
@@ -112,13 +113,13 @@ class VersionHandler(tornado.web.RequestHandler):
         self.write({"version": VERSION})
 
 
-class FileHandler(tornado.web.RequestHandler):
+class FilesHandler(tornado.web.RequestHandler):
     executor = ThreadPoolExecutor(max_workers=int(os.getenv("MAX_POSTGRES_WORKERS", default=5)), thread_name_prefix="postgres_worker")
 
     @tornado.gen.coroutine
     def get(self):
-        load_type = self.get_argument('type', 'global')
-        folders = self.get_arguments('folders')  # Get folders parameter as a list
+        load_type = self.get_argument("type", "global")
+        folders = self.get_arguments("folders")  # Get folders parameter as a list
 
         files: list[dict[str, Union[str, bool]]] = yield self.download_files(load_type, folders)
 
@@ -136,23 +137,18 @@ class FileHandler(tornado.web.RequestHandler):
         self.write(compressed_data)
 
     @run_on_executor
-    def download_files(self, load_type: Literal['global', 'custom'], folders: list[str]) -> list[dict[str, Union[str, bool]]]:
+    def download_files(self, load_type: Literal["global", "custom"], folders: list[str]) -> list[dict[str, Union[str, bool]]]:
         files: list[dict[str, Union[str, bool]]] = []
         conn = connect_db()
 
-        tables_to_load = GLOBAL_TABLES if load_type == 'global' else CUSTOM_COLLECTION_TABLES
+        tables_to_load = GLOBAL_TABLES if load_type == "global" else CUSTOM_COLLECTION_TABLES
 
         with conn.cursor() as cursor:
             for table in tables_to_load:
-                if folders and load_type == 'custom':
-                    cursor.execute(
-                        f'SELECT file_name, relative_path, file_content, is_private FROM "{table}" WHERE relative_path = ANY(%s);',
-                        (folders,)
-                    )
-                elif load_type == 'global':
-                    cursor.execute(
-                        f'SELECT file_name, relative_path, file_content, is_private FROM "{table}";'
-                    )
+                if folders and load_type == "custom":
+                    cursor.execute(f'SELECT file_name, relative_path, file_content, is_private FROM "{table}" WHERE relative_path = ANY(%s);', (folders,))
+                elif load_type == "global":
+                    cursor.execute(f'SELECT file_name, relative_path, file_content, is_private FROM "{table}";')
                 try:
                     records = cursor.fetchall()
                 except psycopg2.ProgrammingError:  # No folders specified, so return any records
@@ -188,10 +184,15 @@ class FileHandler(tornado.web.RequestHandler):
                     file_name = file["fileName"]
                     relative_path = folder_name
                     file_content = file["fileContent"]
-                    cursor.execute(sql.SQL("""
+                    cursor.execute(
+                        sql.SQL(
+                            """
                         INSERT INTO {} (file_name, relative_path, file_content, is_private)
                         VALUES (%s, %s, %s, %s)
-                    """).format(sql.Identifier("custom collections")), (file_name, relative_path, file_content, is_private))
+                    """
+                        ).format(sql.Identifier("custom collections")),
+                        (file_name, relative_path, file_content, is_private),
+                    )
             conn.commit()
             conn.close()
 
@@ -211,9 +212,7 @@ class PublicFoldersHandler(tornado.web.RequestHandler):
         with conn.cursor() as cursor:
             # Loop through all custom collection tables and fetch public folders
             for table in CUSTOM_COLLECTION_TABLES:
-                cursor.execute(
-                    f'SELECT DISTINCT relative_path FROM "{table}" WHERE is_private = False;'
-                )
+                cursor.execute(f'SELECT DISTINCT relative_path FROM "{table}" WHERE is_private = False;')
                 records = cursor.fetchall()
                 for record in records:
                     public_folders.add(record[0])
@@ -227,10 +226,7 @@ class PublicFoldersHandler(tornado.web.RequestHandler):
 
 class PublicSingAlongsHandler(tornado.web.RequestHandler):
     def get(self):
-        public_sing_alongs = [
-            {"name": key, "description": value.description}
-            for key, value in sing_alongs.items() if not value.private
-        ]
+        public_sing_alongs = [{"name": key, "description": value.description} for key, value in sing_alongs.items() if not value.private]
         self.write(json.dumps(public_sing_alongs))
 
 
@@ -297,7 +293,7 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
                 sing_along.clients.append(self)
             played_songs_list = list(sing_along.played_songs)
             song_list = sing_along.song_list
-            self.write_message({"action": "joined", "sing_along_id": sing_along_id, "current_song": sing_along.current_song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
+            self.write_message({"action": "joined", "sing_along_id": sing_along_id, "current_song": sing_along.current_song, "played_songs": played_songs_list, "song_list": song_list, "connected_clients": len(sing_along.clients)})
         else:
             self.write_message({"action": "error", "message": "Sing-along not found"})
 
@@ -320,8 +316,8 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
             played_songs_list = list(sing_along.played_songs)
             song_list = sing_along.song_list
             for client in sing_along.clients:
-                await client.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
-            self.write_message({"action": "sync", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
+                await client.write_message({"action": "change_song", "song": song, "played_songs": played_songs_list, "song_list": song_list, "connected_clients": len(sing_along.clients)})
+            self.write_message({"action": "sync", "song": song, "played_songs": played_songs_list, "song_list": song_list, "connected_clients": len(sing_along.clients)})
 
     async def get_song(self, data):
         if self.sing_along_id and self.sing_along_id in sing_alongs:
@@ -335,7 +331,7 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
             song = sing_along.current_song
             played_songs_list = list(sing_along.played_songs)
             song_list = sing_along.song_list
-            self.write_message({"action": "sync", "song": song, "played_songs": played_songs_list, "song_list": song_list, 'connected_clients': len(sing_along.clients)})
+            self.write_message({"action": "sync", "song": song, "played_songs": played_songs_list, "song_list": song_list, "connected_clients": len(sing_along.clients)})
 
     async def leave_sing_along(self):
         if self.sing_along_id and self.sing_along_id in sing_alongs:
@@ -361,7 +357,6 @@ class SingAlongWebSocket(tornado.websocket.WebSocketHandler):
                 del sing_alongs[self.sing_along_id]
 
 
-
 def make_app():
     return tornado.web.Application(
         [
@@ -370,7 +365,7 @@ def make_app():
             (r"/serviceWorker.js", ServiceWorkerHandler),
             (r"/dist/(.*)", tornado.web.StaticFileHandler, {"path": "dist"}),
             (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "static"}),
-            (r"/api/files", FileHandler),
+            (r"/api/files", FilesHandler),
             (r"/api/public_folders", PublicFoldersHandler),
             (r"/ws", SingAlongWebSocket),
             (r"/version", VersionHandler),

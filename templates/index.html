@@ -126,13 +126,13 @@
     <h5 class="small center-align">Add Songs</h5>
     <div class="field label prefix border">
         <i class="front">folder</i>
-        <input type="text" id="folder-name-input">
+        <input type="text" id="add-song-folder-name-input">
         <label>Folder Name</label>
         <span class="helper">To add sub-folders use a forward slash (/) to separate the folder names.</span>
     </div>
     <br>
     <label class="checkbox">
-        <input type="checkbox" id="folder-is-private-checkbox" autocomplete="off">
+        <input type="checkbox" id="add-song-folder-is-private" autocomplete="off">
         <span>Is Private</span>
     </label>
     <br>
@@ -147,6 +147,41 @@
             <span>Add Song</span>
         </button>
         <button class="transparent link small-round" id="add-group-dialog-close">
+            <span>Close</span>
+        </button>
+    </nav>
+</dialog>
+
+<div class="overlay blur"></div>
+<dialog class="max" id="create-song-dialog">
+    <h5 class="small center-align">Create Song</h5>
+    <div class="field label prefix border">
+        <i class="front">folder</i>
+        <input type="text" id="create-song-folder-name-input">
+        <label>Folder Name</label>
+        <span class="helper">To add sub-folders use a forward slash (/) to separate the folder names.</span>
+    </div>
+    <br>
+    <div class="field label prefix border">
+        <i class="front">folder</i>
+        <input type="text" id="create-song-name-input">
+        <label>Song Name</label>
+    </div>
+    <label class="checkbox">
+        <input type="checkbox" id="create-song-folder-is-private" autocomplete="off">
+        <span>Is Private</span>
+    </label>
+    <br>
+    <div class="field textarea label border extra">
+        <textarea id="song-contents-input" autocomplete="off"></textarea>
+        <label>Song Contents</label>
+    </div>
+    <nav class="right-align transparent">
+        <button class="small-round" id="create-group-dialog-submit">
+            <i>add</i>
+            <span>Add Song</span>
+        </button>
+        <button class="transparent link small-round" id="create-group-dialog-close">
             <span>Close</span>
         </button>
     </nav>
@@ -215,11 +250,11 @@
         <div class="page" id="sing-along-page">
             <div class="padding center-align middle-align transparent">
                 <div class="grid" id="sing-along-controls">
-                    <button class="small-round s6" id="sing-along-create">
+                    <button class="small-round s6" id="open-create-sing-along-dialog">
                         <i>group_add</i>
                         <span>Create</span>
                     </button>
-                    <button class="small-round s6" id="sing-along-join">
+                    <button class="small-round s6" id="open-join-sing-along-dialog">
                         <i>adaptive_audio_mic</i>
                         <span>Join</span>
                     </button>
@@ -258,18 +293,18 @@
 
 <footer class="fixed" id="song-nav" style="display: none;">
     <nav class="bottom">
-        <button class="circle transparent" id="previous-song">
+        <button class="circle transparent" id="prev-song">
             <i>arrow_left</i>
         </button>
 
         <div class="max"></div>
 
-        <button class="circle transparent" id="previous-paragraph">
+        <button class="circle transparent" id="prev-paragraph">
             <i>arrow_upward</i>
         </button>
 
         <label class="checkbox icon">
-            <input type="checkbox" id="paragraph-focus" autocomplete="off">
+            <input type="checkbox" id="toggle-paragraph-view" autocomplete="off">
             <span>
                 <i>visibility_off</i>
                 <i>visibility</i>
@@ -293,7 +328,7 @@
         <button class="circle transparent" id="sing-along-logout" style="display: none;">
             <i>logout</i>
         </button>
-        <button class="circle transparent" id="sing-along-end" style="display: none;">
+        <button class="circle transparent" id="end-sing-along" style="display: none;">
             <i>logout</i>
         </button>
         <div class="max"></div>

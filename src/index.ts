@@ -20,6 +20,7 @@ interface FolderData {
     folderName: string;
     adminAccess: boolean;
 }
+
 interface SingAlongData {
     action: string;
     [key: string]: any;
@@ -28,19 +29,15 @@ interface SingAlongData {
 let selectedFiles = new Set<string>();
 let globalDBFiles: FileData[] = []
 let customDBFiles: FileData[] = []
-let currentParagraphIndex = 0;
-let focusEnabled = false;
-let flattenedFileList: FileData[] = [];
-let currentSongIndex = -1;
 let isSelectableMode = false;
 let publicFolders: string[] = [];
 const LONG_PRESS_DURATION = 500; // Duration in milliseconds to consider a long press
 let longPressTimer: number | null = null;
-const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const socketUrl = `${protocol}//${window.location.host}/ws`;
-let socket: WebSocket | null = null;
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 
+let homePage: HomePage;
+let songPage: SongPage;
+let singAlongPage: SingAlongPage;
 
 class SongContainer {
     containerID: string;
@@ -48,8 +45,9 @@ class SongContainer {
     searchSongInput: HTMLInputElement;
     header: HTMLHeadingElement
     content: HTMLDivElement;
-    currentParagraphIndex: number;
     paragraphs: NodeListOf<HTMLParagraphElement>;
+    currentParagraphIndex: number;
+    focusEnabled: boolean;
 
     constructor(contaierID: string) {
         this.containerID = contaierID;
@@ -57,8 +55,9 @@ class SongContainer {
         this.searchSongInput = this.container.querySelector("#search-song-content-input") as HTMLInputElement;
         this.header = this.container.querySelector("#file-name-header") as HTMLHeadingElement;
         this.content = this.container.querySelector("#file-content") as HTMLDivElement;
-        this.paragraphs = new NodeList() as NodeListOf<HTMLParagraphElement>;
+        this.paragraphs = [] as unknown as NodeListOf<HTMLParagraphElement>;
         this.currentParagraphIndex = 0;
+        this.focusEnabled = false;
         this.updateFontSize();
         this.initialize();
     }
@@ -66,6 +65,19 @@ class SongContainer {
     initialize() {
         this.searchSongInput.addEventListener('input', () => {
             this.searchSongContents();
+        });
+
+        this.container.addEventListener('dblclick', (event) => {
+            const mouseEvent = event as MouseEvent;
+            const songsPage = mouseEvent.currentTarget as HTMLElement;
+            const pageWidth = songsPage.offsetWidth;
+            const clickX = mouseEvent.clientX;
+
+            if (clickX < pageWidth / 2) {
+                this.moveToPreviousParagraph();
+            } else {
+                this.moveToNextParagraph();
+            }
         });
     }
 
@@ -124,6 +136,17 @@ class SongContainer {
         this.content.style.fontSize = `${getFontSize()}px`;
     }
 
+    toggleParagraphFocus() {
+        this.focusEnabled = !this.focusEnabled;
+        if (this.focusEnabled) {
+            this.focusParagraph(this.currentParagraphIndex);
+        } else {
+            this.removeFocusFromAllParagraphs();
+            if (this.content) {
+                this.content.classList.remove('blur');
+            }
+        }
+    }
     removeFocusFromAllParagraphs() {
         this.paragraphs.forEach(paragraph => {
             paragraph.classList.remove('active-paragraph');
@@ -132,12 +155,40 @@ class SongContainer {
         });
     }
 
+    focusParagraph(index?: number) {
+        if (index === undefined) {
+            index = this.currentParagraphIndex;
+        }
+        this.paragraphs.forEach((paragraph, i) => {
+            if (i === index) {
+                paragraph.classList.add('active-paragraph');
+                paragraph.classList.add('blur-none');
+
+                const rect = paragraph.getBoundingClientRect();
+                const offset = window.innerHeight / 2 - rect.height / 2;
+                window.scrollTo({
+                    top: window.scrollY + rect.top - offset,
+                    behavior: 'smooth' // Scroll smoothly to the position
+                });
+            } else {
+                paragraph.classList.remove('active-paragraph');
+                paragraph.classList.remove('blur-none');
+            }
+        });
+
+        if (this.focusEnabled && this.content) {
+            this.content.classList.add('blur');
+        } else if (this.content) {
+            this.content.classList.remove('blur');
+        }
+    }
+
     moveToPreviousParagraph() {
         this.currentParagraphIndex--;
         if (this.currentParagraphIndex < 0) {
             this.currentParagraphIndex = this.paragraphs.length - 1;
         }
-        focusParagraph(this.currentParagraphIndex);
+        this.focusParagraph(this.currentParagraphIndex);
     }
 
     moveToNextParagraph() {
@@ -145,7 +196,7 @@ class SongContainer {
         if (this.currentParagraphIndex >= this.paragraphs.length) {
             this.currentParagraphIndex = 0;
         }
-        focusParagraph(this.currentParagraphIndex);
+        this.focusParagraph(this.currentParagraphIndex);
     }
 
     displaySong(file: FileData) {
@@ -166,35 +217,127 @@ class SongContainer {
 
 class HomePage {
     pageID: string;
+    navBarID: string;
+    songPage?: SongPage;
+    singAlongPage?: SingAlongPage;
+    debounceTimer?: number; // For filtering songs
+    DB?: IDBDatabase;
+    customCollectionsDB?: IDBDatabase;
+    allDBFiles: FileData[];
+    allCustomCollectionDBFiles: FileData[];
+    flattendFileList: FileData[];
+    publicFolders: string[];
     container: HTMLDivElement;
+    navBar: HTMLDialogElement;
     searchSongsInput: HTMLInputElement;
-    debounceTimer: number | null = null; // For filtering songs
-    songPage: SongPage;
     fileList: HTMLDivElement;
     customCollectionsContainer: HTMLDivElement;
     customCollectionsFileList: HTMLDivElement;
-    constructor(pageID: string, songPage: SongPage) {
-        this.pageID = pageID;
-        this.songPage = songPage;
+    openCreateSongDialogButton: HTMLButtonElement;
+    selectSongsToggle: HTMLInputElement;
+    clearSelections: HTMLButtonElement;
+    addSongsSubmitButton: HTMLButtonElement;
+    addSongsCloseButton: HTMLButtonElement;
+    addSongsFolderName: HTMLInputElement;
+    addSongsFolderIsPrivate: HTMLInputElement;
+    createSongFolderName: HTMLInputElement;
+    createSongFolderIsPrivate: HTMLInputElement;
+    createSongDialog: HTMLDialogElement;
+    createSongName: HTMLInputElement;
+    createSongContents: HTMLTextAreaElement;
+    createSongSubmitButton: HTMLButtonElement;
+    createSongCloseButton: HTMLButtonElement;
+    addSongsDialog: HTMLDialogElement;
+    isSelectionMode: boolean;
+    selectedFiles: Set<string>;
 
-        this.debounceTimer = null;
+    constructor(pageID: string, navBarID: string) {
+        this.pageID = pageID;
+        this.navBarID = navBarID;
+
+        this.debounceTimer = undefined;
+        this.DB = undefined;
+        this.customCollectionsDB = undefined;
+        this.allDBFiles = [];
+        this.allCustomCollectionDBFiles = [];
+        this.flattendFileList = [];
+        this.publicFolders = [];
+        this.isSelectionMode = false;
+        this.selectedFiles = new Set<string>();
 
         this.container = document.getElementById(this.pageID) as HTMLDivElement;
+        this.navBar = document.getElementById(this.navBarID) as HTMLDialogElement;
         this.searchSongsInput = this.container.querySelector("#search-songs-input") as HTMLInputElement;
         this.fileList = this.container.querySelector("#file-list") as HTMLDivElement;
         this.customCollectionsContainer = this.container.querySelector("#custom-collections-container") as HTMLDivElement;
         this.customCollectionsContainer.style.display = 'none';
         this.customCollectionsFileList = this.customCollectionsContainer.querySelector("#custom-collections-file-list") as HTMLDivElement;
+
+        this.createSongDialog = document.getElementById('create-song-dialog') as HTMLDialogElement;
+        this.addSongsDialog = document.getElementById('add-song-dialog') as HTMLDialogElement;
+
+        this.selectSongsToggle = this.navBar.querySelector("#select-songs-toggle") as HTMLInputElement;
+        this.clearSelections = this.navBar.querySelector("#clear-selection") as HTMLButtonElement;
+        this.clearSelections.style.display = 'none';
+        this.openCreateSongDialogButton = this.navBar.querySelector("#add-group") as HTMLButtonElement;
+
+        this.createSongSubmitButton = this.createSongDialog.querySelector('#create-group-dialog-submit') as HTMLButtonElement;
+        this.createSongCloseButton = this.createSongDialog.querySelector('#create-group-dialog-close') as HTMLButtonElement;
+        this.createSongName = this.createSongDialog.querySelector('#folder-name-input') as HTMLInputElement;
+        this.createSongContents = this.createSongDialog.querySelector('#song-contents-input') as HTMLTextAreaElement;
+        this.createSongFolderName = this.createSongDialog.querySelector('#create-song-folder-name-input') as HTMLInputElement;
+        this.createSongFolderIsPrivate = this.createSongDialog.querySelector('#create-song-folder-is-private') as HTMLInputElement;
+        this.addSongsFolderIsPrivate = this.addSongsDialog.querySelector('#add-song-folder-is-private') as HTMLInputElement;
+        this.addSongsFolderName = this.addSongsDialog.querySelector('#add-song-folder-name-input') as HTMLInputElement;
+        this.addSongsSubmitButton = this.addSongsDialog.querySelector('#add-group-dialog-submit') as HTMLButtonElement;
+        this.addSongsCloseButton = this.addSongsDialog.querySelector('#add-group-dialog-close') as HTMLButtonElement;
+
         this.initialize();
     }
 
-    initialize() {
+    async initialize() {
+        [this.DB, this.customCollectionsDB] = await Promise.all([
+            this.initGlobalDB(),
+            this.initCustomCollectionDB(),
+        ]);
+
+        [this.allDBFiles, this.allCustomCollectionDBFiles, this.publicFolders] = await Promise.all([
+            this.getAllFilesFromDB(this.DB),
+            this.getAllFilesFromDB(this.customCollectionsDB),
+            this.fetchAllPublicFolders(),
+        ]);
+
+
+        if (this.allDBFiles.length > 0 || this.allCustomCollectionDBFiles.length > 0) {
+            requestAnimationFrame(() => {
+                this.renderFileList();
+            });
+        }
+
+        if (navigator.onLine) {
+            const [newGlobalFiles, newCustomFiles] = await Promise.all([
+                this.fetchGlobalFiles(),
+                this.fetchCustomCollectionFiles(),
+            ]);
+
+            if (this.allDBFiles.length <= 0) {
+                requestAnimationFrame(() => {
+                    this.renderFileList();
+                    this.allDBFiles = newGlobalFiles;
+                    this.allCustomCollectionDBFiles = newCustomFiles;
+                });
+            }
+            console.log("Updated indexedDB files from server.");
+        } else if (this.allDBFiles.length === 0) {
+            console.log("No internet connection and no data in IndexedDB.");
+        }
+
         this.searchSongsInput.addEventListener('input', () => {
             const query = this.searchSongsInput.value.trim();
             if (query === '') {
                 if (this.debounceTimer) {
                     clearTimeout(this.debounceTimer);
-                    this.debounceTimer = null;
+                    this.debounceTimer = undefined;
                 }
                 this.filterSongs(query);
                 return;
@@ -208,6 +351,194 @@ class HomePage {
                 this.filterSongs(query);
             }, 300);
         });
+        this.selectSongsToggle.addEventListener('change', async () => {
+            this.isSelectionMode = this.selectSongsToggle.checked;
+            if (this.isSelectionMode) {
+                this.clearSelections.style.display = 'block';
+            } else {
+                this.clearSelections.style.display = 'none';
+            }
+            const fileItems = this.container.querySelectorAll('.file-item');
+            fileItems.forEach(fileButton => {
+                const fileName = fileButton.getAttribute('data-file-name');
+                if (this.isSelectionMode) {
+                    fileButton.classList.add('selectable');
+                    if (fileName && this.selectedFiles.has(fileName)) {
+                        fileButton.classList.add('selected');
+                    }
+                } else {
+                    fileButton.classList.remove('selectable');
+                    fileButton.classList.remove('selected');
+                }
+            });
+        });
+        this.clearSelections.addEventListener('click', async () => {
+            this.selectedFiles.clear();
+            this.updateFileSelectionVisuals();
+        });
+        this.addSongsCloseButton.addEventListener('click', () => {
+            ui('#add-song-dialog');
+        });
+        this.createSongCloseButton.addEventListener('click', () => {
+            ui('#create-song-dialog');
+        });
+        this.addSongsSubmitButton.addEventListener('click', async () => {
+            const isPrivate = this.addSongsFolderIsPrivate.checked;
+            const folderName = this.addSongsFolderName.value.trim().replace("/", "\\");
+            const filesToUpload: FileData[] = [];
+            const adminAccess = true;
+
+            for (const file of this.allDBFiles) {
+                if (selectedFiles.has(file.fileName)) {
+                    filesToUpload.push(file);
+                }
+            }
+            if (selectedFiles.size <= 0) {
+                showErrorSnackbar('No files selected.');
+                return;
+            }
+
+            const files = await Promise.all(
+                filesToUpload.map(async (file) => {
+                    return {
+                        fileName: file.fileName,
+                        fileContent: file.fileContent,
+                    };
+                })
+            );
+
+            const data = {
+                folderName,
+                isPrivate,
+                files,
+            };
+
+
+            try {
+                const response = await fetch('/api/files', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    showErrorSnackbar('Error uploading files: ' + response.statusText);
+                }
+
+                const text = await response.text();
+                const result = text ? JSON.parse(text) : {};
+
+                if (result.status === 'success') {
+                    for (const file of filesToUpload) {
+                        this.storeFilesinDB([{
+                            fileName: file.fileName,
+                            fileContent: file.fileContent,
+                            relativePath: folderName,
+                            isPrivate: isPrivate,
+                        }]);
+                    }
+                    addFolderToCustomFolders(folderName, adminAccess);
+                    const customFolders = this.getCustomFoldersFromLocalStorage();
+
+                    customDBFiles = await this.fetchCustomCollectionFiles(),
+                        publicFolders = await this.fetchAllPublicFolders();
+
+                    await this.renderFileList();
+
+                    showSuccessSnackbar('Files successfully added to custom collections.')
+                } else {
+                    showErrorSnackbar(result.message || 'Unknown error');
+                }
+            } catch (error) {
+                console.error(error);
+                showErrorSnackbar('Error sending request: ' + error);
+            }
+        });
+        this.createSongSubmitButton.addEventListener('click', async () => {
+            const isPrivate = this.createSongFolderIsPrivate.checked;
+            const folderName = this.createSongFolderName.value.trim().replace("/", "\\");
+            const songName = this.createSongName.value.trim();
+            const contents = this.createSongContents.value.trim();
+            const adminAccess = true;
+
+            if (folderName === '' || songName === '' || contents === '') {
+                showErrorSnackbar('All fields are required.');
+                return;
+            }
+            const newFile: FileData = {
+                fileName: songName,
+                fileContent: contents,
+                relativePath: folderName,
+                isPrivate,
+            };
+            const data = {
+                folderName,
+                isPrivate,
+                files: [newFile],
+            };
+
+            try {
+                const response = await fetch('/api/files', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    showErrorSnackbar('Error uploading files: ' + response.statusText);
+                }
+
+                const text = await response.text();
+                const result = text ? JSON.parse(text) : {};
+
+                if (result.status === 'success') {
+                    this.storeFilesinDB([newFile]);
+                    this.addFolderToCustomFolders(folderName, adminAccess);
+
+                    [customDBFiles, publicFolders] = await Promise.all([
+                        this.fetchCustomCollectionFiles(),
+                        this.fetchAllPublicFolders(),
+                    ]);
+
+                    await this.renderFileList();
+
+                    showSuccessSnackbar('Files successfully added to custom collections.')
+                } else {
+                    showErrorSnackbar(result.message || 'Unknown error');
+                }
+            } catch (error) {
+                console.error(error);
+                showErrorSnackbar('Error sending request: ' + error);
+            }
+            ui('#create-song-dialog');
+        });
+        this.openCreateSongDialogButton.addEventListener('click', () => {
+            if (this.selectedFiles.size <= 0) {
+                ui('#create-song-dialog');
+            }else{
+                const selectedFilesList = this.addSongsDialog.querySelector('#selected-songs-list') as HTMLElement;
+                let count = 1;
+                selectedFilesList.innerHTML = '';
+
+                selectedFiles.forEach(fileName => {
+                    const fileButton = document.createElement('a');
+                    fileButton.className = 'file-item padding no-round wave wrap';
+                    fileButton.textContent = count++ + '. ' + fileName.replace('.txt', '');
+                    selectedFilesList.appendChild(fileButton);
+                });
+                ui('#add-song-dialog');
+            }
+        });
+
+    }
+
+    setReferences(songPage: SongPage, singAlongPage: SingAlongPage) {
+        this.songPage = songPage;
+        this.singAlongPage = singAlongPage;
     }
 
     async filterSongs(query: string) {
@@ -249,7 +580,7 @@ class HomePage {
             const escapedQuery = escapeRegExp(query);
             const regex = new RegExp(`(${escapedQuery})`, 'gi');
 
-            const fileContainer = getFileButton(file);
+            const fileContainer = this.getFileButton(file);
             const fileButton = fileContainer.querySelector('a') as HTMLAnchorElement;
             fileButton.className = 'small-padding wave file-item wrap no-round grid';
 
@@ -271,11 +602,11 @@ class HomePage {
 
         content.appendChild(fragment);
         this.fileList.appendChild(content);
-        updateFileSelectionVisuals();
+        this.updateFileSelectionVisuals();
     }
 
     renderFileList() {
-        flattenedFileList = [];
+        this.flattendFileList = [];
         const globalFileTree: { [key: string]: any } = {};
         const customFileTree: { [key: string]: any } = {};
 
@@ -288,11 +619,7 @@ class HomePage {
             this.customCollectionsContainer.style.display = 'none';
         }
 
-        const naturalSort = (a: string, b: string) => {
-            return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-        };
-
-        globalDBFiles.forEach(file => {
+        this.allDBFiles.forEach(file => {
             const pathParts = file.relativePath.split('\\');
             let currentLevel = globalFileTree;
 
@@ -306,7 +633,7 @@ class HomePage {
             currentLevel.push(file);
         });
 
-        customDBFiles.forEach(file => {
+        this.allCustomCollectionDBFiles.forEach(file => {
             const pathParts = file.relativePath.split('\\');
             let currentLevel = customFileTree;
 
@@ -320,102 +647,17 @@ class HomePage {
             currentLevel.push(file);
         });
 
-        const sortTree = (tree: any) => {
-            Object.keys(tree).forEach(key => {
-                if (Array.isArray(tree[key])) {
-                    tree[key].sort((a: FileData, b: FileData) => naturalSort(a.fileName, b.fileName));
-                } else {
-                    sortTree(tree[key]);
-                }
-            });
-        };
+        this.sortTree(globalFileTree);
+        this.sortTree(customFileTree);
 
-        sortTree(globalFileTree);
-        sortTree(customFileTree);
+        this.flattenFileTree(globalFileTree);
+        this.flattenFileTree(customFileTree);
 
-        flattenFileTree(globalFileTree);
-        flattenFileTree(customFileTree);
 
-        const createFileTree = (tree: any, depth: number = 0, customContent: boolean = false): DocumentFragment => {
-            const fragment = document.createDocumentFragment();
-
-            Object.keys(tree).sort(naturalSort).forEach(key => {
-                const value = tree[key];
-                const details = document.createElement('details');
-                details.className = 'small-margin small-round';
-
-                details.addEventListener('toggle', () => {
-                    if (details.open) {
-                        summary.classList.add('primary');
-                        summary.classList.remove('fill');
-                    } else {
-                        summary.classList.remove('primary');
-                        summary.classList.add('fill');
-                    }
-                });
-
-                const summary = document.createElement('summary');
-                summary.className = 'none no-padding fill';
-
-                const groupElement = document.createElement('a');
-                groupElement.className = 'row wave padding small-round';
-
-                const imgElement = document.createElement('i');
-                const groupIcon = Array.isArray(value) ? "ri-book-shelf-line" : "ri-folder-fill";
-                imgElement.className = groupIcon;
-                groupElement.appendChild(imgElement);
-
-                const divElement = document.createElement('div');
-                divElement.className = 'max';
-
-                const groupNameElement = document.createElement('p');
-                groupNameElement.textContent = key;
-                divElement.appendChild(groupNameElement);
-
-                groupElement.appendChild(divElement);
-
-                summary.appendChild(groupElement);
-                details.appendChild(summary);
-
-                const lazyLoadContainer = document.createElement('div'); // Placeholder for lazy loading
-                details.appendChild(lazyLoadContainer);
-
-                details.addEventListener('toggle', () => {
-                    if (details.open && !lazyLoadContainer.hasChildNodes()) {
-                        if (Array.isArray(value)) {
-                            const fileArticle = document.createElement('article');
-                            fileArticle.className = 'group-content no-border no-round no-padding';
-                            fileArticle.style.marginTop = '0px';
-
-                            value.forEach((file: FileData) => {
-                                if (customContent) {
-                                    const fileButton = getCustomFileButton(file);
-                                    fileArticle.appendChild(fileButton);
-                                } else {
-                                    const fileButton = getFileButton(file);
-                                    fileArticle.appendChild(fileButton);
-                                }
-                                const divider = document.createElement('div');
-                                divider.className = 'divider';
-                                fileArticle.appendChild(divider);
-                            });
-
-                            lazyLoadContainer.appendChild(fileArticle);
-                        } else {
-                            lazyLoadContainer.appendChild(createFileTree(value, depth + 1));
-                        }
-                    }
-                    updateFileSelectionVisuals();
-                });
-                fragment.appendChild(details);
-            });
-            return fragment;
-        };
-
-        const globalFileTreeFragment = createFileTree(globalFileTree, 0, false);
+        const globalFileTreeFragment = this.createFileTree(globalFileTree, 0, false);
         this.fileList.appendChild(globalFileTreeFragment);
 
-        const customFileTreeFragment = createFileTree(customFileTree, 0, true);
+        const customFileTreeFragment = this.createFileTree(customFileTree, 0, true);
         this.customCollectionsFileList.appendChild(customFileTreeFragment);
 
         const progressElement = document.querySelector('#progress-bar-container') as HTMLDivElement;
@@ -424,30 +666,814 @@ class HomePage {
             progressElement.style.display = 'none';
         }
     }
+
+    naturalSort(a: string, b: string) {
+        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    };
+
+    createFileTree(tree: any, depth: number = 0, customContent: boolean = false): DocumentFragment {
+        const fragment = document.createDocumentFragment();
+
+        Object.keys(tree).sort(this.naturalSort).forEach(key => {
+            const value = tree[key];
+            const details = document.createElement('details');
+            details.className = 'small-margin small-round';
+
+            details.addEventListener('toggle', () => {
+                if (details.open) {
+                    summary.classList.add('primary');
+                    summary.classList.remove('fill');
+                } else {
+                    summary.classList.remove('primary');
+                    summary.classList.add('fill');
+                }
+            });
+
+            const summary = document.createElement('summary');
+            summary.className = 'none no-padding fill';
+
+            const groupElement = document.createElement('a');
+            groupElement.className = 'row wave padding small-round';
+
+            const imgElement = document.createElement('i');
+            const groupIcon = Array.isArray(value) ? "ri-book-shelf-line" : "ri-folder-fill";
+            imgElement.className = groupIcon;
+            groupElement.appendChild(imgElement);
+
+            const divElement = document.createElement('div');
+            divElement.className = 'max';
+
+            const groupNameElement = document.createElement('p');
+            groupNameElement.textContent = key;
+            divElement.appendChild(groupNameElement);
+
+            groupElement.appendChild(divElement);
+
+            summary.appendChild(groupElement);
+            details.appendChild(summary);
+
+            const lazyLoadContainer = document.createElement('div'); // Placeholder for lazy loading
+            details.appendChild(lazyLoadContainer);
+
+            details.addEventListener('toggle', () => {
+                if (details.open && !lazyLoadContainer.hasChildNodes()) {
+                    if (Array.isArray(value)) {
+                        const fileArticle = document.createElement('article');
+                        fileArticle.className = 'group-content no-border no-round no-padding';
+                        fileArticle.style.marginTop = '0px';
+
+                        value.forEach((file: FileData) => {
+                            if (customContent) {
+                                const fileButton = this.getCustomFileButton(file);
+                                fileArticle.appendChild(fileButton);
+                            } else {
+                                const fileButton = this.getFileButton(file);
+                                fileArticle.appendChild(fileButton);
+                            }
+                            const divider = document.createElement('div');
+                            divider.className = 'divider';
+                            fileArticle.appendChild(divider);
+                        });
+
+                        lazyLoadContainer.appendChild(fileArticle);
+                    } else {
+                        lazyLoadContainer.appendChild(this.createFileTree(value, depth + 1));
+                    }
+                }
+                this.updateFileSelectionVisuals();
+            });
+            fragment.appendChild(details);
+        });
+        return fragment;
+    };
+
+    updateFileSelectionVisuals() {
+        const fileItems = this.container.querySelectorAll('.file-item');
+        fileItems.forEach(item => {
+            const fileName = item.getAttribute('data-file-name');
+            const icon = item.querySelector('i') as HTMLElement;
+            if (isSelectableMode) {
+                item.classList.add('selectable');
+                icon.textContent = 'check_box';
+            } else {
+                item.classList.remove('selectable');
+                icon.textContent = 'check_box_outline_blank';
+            }
+
+            if (fileName && selectedFiles.has(fileName)) {
+                item.classList.add('selected');
+                icon.textContent = 'check_box';
+            } else {
+                item.classList.remove('selected');
+                icon.textContent = 'check_box_outline_blank';
+            }
+        });
+    }
+
+    sortTree(tree: any) {
+        Object.keys(tree).forEach(key => {
+            if (Array.isArray(tree[key])) {
+                tree[key].sort((a: FileData, b: FileData) => this.naturalSort(a.fileName, b.fileName));
+            } else {
+                this.sortTree(tree[key]);
+            }
+        });
+    };
+
+    flattenFileTree(tree: any, basePath: string = '') {
+        Object.keys(tree).sort(this.naturalSort).forEach(key => {
+            const value = tree[key];
+            const currentPath = basePath ? `${basePath}\\${key}` : key;
+
+            if (Array.isArray(value)) {
+                value.forEach((file: FileData) => {
+                    this.flattendFileList.push(file);
+                });
+            } else {
+                this.flattenFileTree(value, currentPath);
+            }
+        });
+    }
+
+    async initGlobalDB(): Promise<IDBDatabase> {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('GlobalFiles', 1);
+
+            request.onupgradeneeded = (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                if (!db.objectStoreNames.contains('files')) {
+                    db.createObjectStore('files', { keyPath: ['relativePath', 'fileName'] });
+                }
+            };
+
+            request.onsuccess = (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                resolve(db);
+            };
+
+            request.onerror = (event) => {
+                reject((event.target as IDBOpenDBRequest).error);
+            };
+        });
+    }
+
+    async initCustomCollectionDB(): Promise<IDBDatabase> {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('CustomCollections', 1);
+
+            request.onupgradeneeded = (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                if (!db.objectStoreNames.contains('files')) {
+                    db.createObjectStore('files', { keyPath: ['relativePath', 'fileName'] });
+                }
+            };
+
+            request.onsuccess = (event) => {
+                const db = (event.target as IDBOpenDBRequest).result;
+                resolve(db);
+            };
+
+            request.onerror = (event) => {
+                reject((event.target as IDBOpenDBRequest).error);
+            };
+        });
+    }
+
+    async getAllFilesFromDB(db: IDBDatabase): Promise<FileData[]> {
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction('files', 'readonly');
+            const store = transaction.objectStore('files');
+            const getAllRequest = store.getAll();
+
+            getAllRequest.onsuccess = () => {
+                resolve(getAllRequest.result);
+            };
+
+            getAllRequest.onerror = () => {
+                reject(getAllRequest.error);
+            };
+        });
+    }
+
+    async fetchGlobalFiles(): Promise<FileData[]> {
+        const response = await fetch('/api/files?type=global');
+        const files: FileData[] = await response.json();
+
+        try {
+            if (this.DB) {
+                await this.storeFilesinDB(files);
+            } else {
+                this.DB = await this.initGlobalDB();
+                await this.storeFilesinDB(files);
+            }
+        } catch (error) {
+            console.error("Error storing files in IndexedDB:", error);
+        }
+
+        return files;
+    }
+
+    getCustomFoldersFromLocalStorage(): FolderData[] {
+        const folders = localStorage.getItem('customFolders');
+        return folders ? JSON.parse(folders) : [];
+    }
+
+    addFolderToCustomFolders(folderName: string, adminAccess: boolean) {
+        const folders = this.getCustomFoldersFromLocalStorage();
+        const existingFolder = folders.find(f => f.folderName === folderName);
+
+        if (!existingFolder) {
+            folders.push({ folderName, adminAccess });
+            saveCustomFoldersToLocalStorage(folders);
+        } else {
+            console.log(`Folder "${folderName}" already exists in customFolders.`);
+        }
+    }
+
+    removeFolderFromCustomFolders(folderName: string) {
+        let folders = this.getCustomFoldersFromLocalStorage();
+        if (folders.some(f => f.folderName === folderName)) {
+            folders = folders.filter(f => f.folderName !== folderName);
+            saveCustomFoldersToLocalStorage(folders);
+        } else {
+            console.log(`Folder "${folderName}" does not exist in customFolders.`);
+        }
+    }
+
+    async fetchCustomCollectionFiles(): Promise<FileData[]> {
+        const foldersData = this.getCustomFoldersFromLocalStorage();
+        const params = new URLSearchParams({ type: 'custom' });
+        const folders = foldersData.map(folder => folder.folderName);
+        folders.forEach(folder => params.append('folders', folder));
+
+        const response = await fetch(`/api/files?${params.toString()}`);
+        const files: FileData[] = await response.json();
+
+        try {
+            if (this.customCollectionsDB) {
+                this.storeFilesinDB(files);
+            } else {
+                this.customCollectionsDB = await this.initCustomCollectionDB();
+                this.storeFilesinDB(files);
+            }
+        } catch (error) {
+            console.error("Error storing files in IndexedDB:", error);
+        }
+        return files;
+    }
+
+    async storeFilesinDB(files: FileData[]) {
+        return new Promise((resolve, reject) => {
+            if (!this.customCollectionsDB){
+                showErrorSnackbar('Error storing files: Custom Collections DB not initialized.');
+                return;
+            }
+            const transaction = this.customCollectionsDB.transaction('files', 'readwrite');
+            const store = transaction.objectStore('files');
+
+            files.forEach(file => {
+                if (file.relativePath && file.fileName) {
+                    store.put(file);
+                } else {
+                    console.error('File data missing relativePath or fileName:', file);
+                }
+            });
+
+            transaction.oncomplete = () => resolve(true);
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    getFileButton(file: FileData): HTMLElement {
+        const fileContainer = document.createElement('div');
+
+        const icon = document.createElement('i');
+        icon.textContent = selectedFiles.has(file.fileName) ? 'check_box' : 'check_box_outline_blank';
+        icon.className = 's2';
+
+        const header = document.createElement('h6');
+        header.className = 'small s10';
+        header.textContent = file.fileName.replace('.txt', '');
+
+        const fileButton = document.createElement('a');
+        fileButton.setAttribute('data-file-name', file.fileName);
+        fileButton.className = 'file-item padding surface-container no-round wave wrap grid';
+        fileButton.appendChild(header);
+        fileButton.insertBefore(icon, fileButton.firstChild);
+
+
+        fileContainer.appendChild(fileButton);
+
+        if (selectedFiles.has(file.fileName)) {
+            fileButton.classList.add('selected');
+        }
+
+        let touchMoved = false;
+
+        const startLongPress = () => {
+            longPressTimer = window.setTimeout(() => {
+                const selectSongsToggle = document.getElementById('select-songs-toggle') as HTMLInputElement;
+                selectSongsToggle.checked = !selectSongsToggle.checked;
+                const event = new Event('change');
+                selectSongsToggle.dispatchEvent(event);
+            }, LONG_PRESS_DURATION);
+        };
+
+        const cancelLongPress = () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        };
+
+        fileButton.addEventListener('mousedown', startLongPress);
+        fileButton.addEventListener('mouseup', cancelLongPress);
+        fileButton.addEventListener('mouseleave', cancelLongPress);
+
+        fileButton.addEventListener('touchstart', (event) => {
+            touchMoved = false;
+            startLongPress();
+        });
+
+        fileButton.addEventListener('touchend', () => {
+            if (!touchMoved) {
+                cancelLongPress();
+            }
+        });
+
+        fileButton.addEventListener('touchmove', () => {
+            touchMoved = true;
+            cancelLongPress();
+        });
+
+        fileButton.addEventListener('click', (event) => {
+            if (isSelectableMode) {
+                event.preventDefault();
+                fileButton.classList.toggle('selected');
+                if (fileButton.classList.contains('selected')) {
+                    selectedFiles.add(file.fileName);
+                    icon.textContent = 'check_box';
+                } else {
+                    selectedFiles.delete(file.fileName);
+                    icon.textContent = 'check_box_outline_blank';
+                }
+            } else {
+                this.songPage?.displaySong(file);
+            }
+        });
+
+        return fileContainer;
+    }
+
+    getCustomFileButton(file: FileData): HTMLElement {
+        const fileButton = document.createElement('a');
+        fileButton.className = 'custom-file-item padding surface-container no-round wave wrap';
+        fileButton.textContent = file.fileName.replace('.txt', '');
+        fileButton.setAttribute('data-file-name', file.fileName);
+        fileButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            this.songPage?.displaySong(file);
+        });
+        return fileButton;
+    }
+
+    async fetchAllPublicFolders(): Promise<string[]> {
+        const response = await fetch('/api/public_folders');
+        const folders: string[] = await response.json();
+        return folders;
+    }
+
+    showNav(){
+        this.navBar.style.display = "block";
+    }
+
+    hideNav(){
+        this.navBar.style.display = "none";
+    }
 }
 
 class SongPage {
-    pageID: string | undefined;
+    pageID: string;
+    navBarID: string;
+    singAlongPage?: SingAlongPage;
+    homePage?: HomePage;
+    flattendFileList: FileData[];
     container: HTMLDivElement;
     songContainer: SongContainer;
-    constructor(pageID: string) {
+    navBar: HTMLDialogElement;
+    currentSongIndex: number;
+    nextSongButton: HTMLButtonElement;
+    prevSongButton: HTMLButtonElement;
+    nextParagraphButton: HTMLButtonElement;
+    prevParagraphButton: HTMLButtonElement;
+    toggleParagraphViewButton: HTMLInputElement;
+
+    constructor(pageID: string, navBarID: string) {
         this.pageID = pageID;
-        this.container = document.getElementById(this.pageID) as HTMLDivElement;
+        this.navBarID = navBarID;
+
         this.songContainer = new SongContainer(this.pageID);
+        this.currentSongIndex = 0;
+        this.flattendFileList = [];
+
+        this.container = document.getElementById(this.pageID) as HTMLDivElement;
+        this.navBar = document.getElementById(this.navBarID) as HTMLDialogElement;
+        this.nextSongButton = this.navBar.querySelector("#next-song") as HTMLButtonElement;
+        this.prevSongButton = this.navBar.querySelector("#prev-song") as HTMLButtonElement;
+        this.nextParagraphButton = this.navBar.querySelector("#next-paragraph") as HTMLButtonElement;
+        this.prevParagraphButton = this.navBar.querySelector("#prev-paragraph") as HTMLButtonElement;
+        this.toggleParagraphViewButton = this.navBar.querySelector("#toggle-paragraph-view") as HTMLInputElement;
+
+        this.initialize();
+    }
+
+    initialize() {
+        this.nextSongButton.addEventListener('click', () => {
+            this.moveToNextSong();
+        });
+        this.prevSongButton.addEventListener('click', () => {
+            this.moveToPreviousSong();
+        });
+        this.nextParagraphButton.addEventListener('click', () => {
+            this.songContainer.moveToNextParagraph();
+        });
+        this.prevParagraphButton.addEventListener('click', () => {
+            this.songContainer.moveToPreviousParagraph();
+        });
+        this.toggleParagraphViewButton.addEventListener('change', () => {
+            this.songContainer.toggleParagraphFocus();
+        });
+    }
+
+    setReferences(singAlongPage: SingAlongPage, homePage: HomePage) {
+        this.singAlongPage = singAlongPage;
+        this.homePage = homePage;
+        this.flattendFileList = homePage.flattendFileList;
+    }
+
+    moveToPreviousSong() {
+        if (this.currentSongIndex > 0) {
+            this.currentSongIndex--;
+            const previousSong = this.flattendFileList[this.currentSongIndex];
+            this.songContainer.displaySong(previousSong);
+        }
+    }
+
+    moveToNextSong() {
+        if (this.currentSongIndex < this.flattendFileList.length - 1) {
+            this.currentSongIndex++;
+            const nextSong = this.flattendFileList[this.currentSongIndex];
+            this.songContainer.displaySong(nextSong);
+        }
+    }
+
+    updateFontSize() {
+        this.songContainer.updateFontSize();
+    }
+
+    displaySong(file: FileData) {
+        ui('#song');
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        this.currentSongIndex = this.flattendFileList.findIndex(song => song === file);
+        this.songContainer.displaySong(file);
+        this.navBar.style.display = "block";
+    }
+    showNav(){
+        this.navBar.style.display = "block";
+    }
+    hideNav(){
+        this.navBar.style.display = "none";
     }
 }
 
 class SingAlongPage {
-    pageID: string | undefined;
-    container: HTMLDivElement;
+    pageID: string;
+    navBarID: string;
+    songPage?: SongPage;
+    homePage?: HomePage;
+    protocol: string;
+    socketUrl: string;
+    socket: WebSocket | null;
     songContainer: SongContainer;
-    constructor(pageID: string) {
+    flattendFileList?: FileData[];
+    container: HTMLDivElement;
+    navBar: HTMLDialogElement;
+    createSingAlongDialog: HTMLDialogElement;
+    joinSingAlongDialog: HTMLDialogElement;
+    singAlongControlsContainer: HTMLDivElement;
+    openJoinSingAlongDialogButton: HTMLButtonElement;
+    openCreateSingAlongDialogButton: HTMLButtonElement;
+    endSingAlongButton: HTMLButtonElement;
+    leaveSingAlongButton: HTMLButtonElement;
+    createSingAlongSubmitButton: HTMLButtonElement;
+
+    constructor(pageID: string, navBarID: string) {
         this.pageID = pageID;
-        this.container = document.getElementById(this.pageID) as HTMLDivElement;
+        this.navBarID = navBarID
+
+        this.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        this.socketUrl = `${this.protocol}//${window.location.host}/ws`;
+        this.socket = null;
         this.songContainer = new SongContainer(this.pageID);
+
+        this.container = document.getElementById(this.pageID) as HTMLDivElement;
+        this.navBar = document.getElementById(this.navBarID) as HTMLDialogElement;
+        this.createSingAlongDialog = document.getElementById('create-sing-along-dialog') as HTMLDialogElement;
+        this.joinSingAlongDialog = document.getElementById('join-sing-along-dialog') as HTMLDialogElement;
+
+        this.singAlongControlsContainer = this.container.querySelector("#sing-along-controls") as HTMLDivElement;
+        this.openJoinSingAlongDialogButton = this.singAlongControlsContainer.querySelector("#open-join-sing-along-dialog") as HTMLButtonElement;
+        this.openCreateSingAlongDialogButton = this.singAlongControlsContainer.querySelector("#open-create-sing-along-dialog") as HTMLButtonElement;
+        this.endSingAlongButton = this.navBar.querySelector("#end-sing-along") as HTMLButtonElement;
+        this.leaveSingAlongButton = this.navBar.querySelector("#sing-along-logout") as HTMLButtonElement;
+
+        this.createSingAlongSubmitButton = this.openCreateSingAlongDialogButton.querySelector('#create-sing-along-submit') as HTMLButtonElement;
+
+        this.initialize();
+    }
+
+    initialize() {
+        this.openCreateSingAlongDialogButton.addEventListener('click', () => {
+            ui('#create-sing-along-dialog');
+        });
+        this.endSingAlongButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            this.endSingAlong();
+        });
+        this.leaveSingAlongButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            this.leaveSingAlong();
+        });
+        this.openJoinSingAlongDialogButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            await fetch('/api/public_sing_alongs')
+                .then(response => response.json())
+                .then(data => {
+                    const singAlongs = data.map((singAlong: { name: string; description: string; }) => {
+                        return {
+                            name: singAlong.name,
+                            description: singAlong.description,
+                        };
+                    });
+                    const singAlongIdContainer = document.getElementById('sing-along-id-container') as HTMLDivElement;
+                    singAlongIdContainer.innerHTML = '';
+                    const singAlongSelect = document.getElementById('sing-along-id-container') as HTMLDivElement;
+                    singAlongs.forEach((singAlong: { name: string; description: string; }) => {
+                        const button: HTMLButtonElement = document.createElement('button');
+                        const icon = document.createElement('i');
+                        icon.textContent = 'login';
+                        const span = document.createElement('span');
+                        span.textContent = singAlong.name + ' - ' + singAlong.description;
+                        button.appendChild(icon);
+                        button.appendChild(span);
+                        button.className = "small-round responsive left-align";
+                        button.id = singAlong.name;
+                        button.addEventListener('click', () => {
+                            const isHost = localStorage.getItem('is_host') === 'true';
+                            this.joinSingAlong(singAlong.name, isHost);
+                            this.openCreateSingAlongDialogButton.style.display = 'none';
+                            this.openJoinSingAlongDialogButton.style.display = 'none';
+                            this.leaveSingAlongButton.style.display = 'inline-flex';
+                            this.endSingAlongButton.style.display = 'none';
+                            ui('#join-sing-along-dialog');
+                        });
+                        singAlongSelect.appendChild(button);
+                    });
+                });
+            ui('#join-sing-along-dialog');
+        });
+    }
+
+    setReferences(songPage: SongPage, homePage: HomePage) {
+        this.songPage = songPage;
+        this.homePage = homePage;
+        this.flattendFileList = homePage.flattendFileList;
+    }
+
+    updateFontSize() {
+        this.songContainer.updateFontSize();
+    }
+
+    setupWebSocket(onOpenCallback?: () => void) {
+        this.socket = new WebSocket(this.socketUrl);
+
+        this.socket.onopen = () => {
+            if (onOpenCallback) {
+                onOpenCallback();
+            }
+        };
+
+        this.socket.onmessage = (event) => {
+            const data: SingAlongData = JSON.parse(event.data);
+            console.log(data);
+            this.handleWebSocketMessage(data);
+        };
+
+        this.socket.onclose = () => {
+            console.log('WebSocket connection closed');
+        };
+
+        this.socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+    }
+
+    handleWebSocketMessage(data: SingAlongData) {
+        switch (data.action) {
+            case 'created':
+                localStorage.setItem('sing_along_id', data.sing_along_id);
+                localStorage.setItem('is_host', 'true');
+                break;
+            case 'joined':
+                localStorage.setItem('sing_along_id', data.sing_along_id);
+                localStorage.setItem('is_host', 'false');
+                this.getSong();
+                break;
+            case 'change_song':
+                this.updateUIWithNewSong(data.song);
+                break;
+            case 'get_song':
+                const songData = this.getFileDataFromSongName(data.song);
+                if (songData) {
+                    this.songContainer.displaySong(songData);
+                }
+                break;
+            case 'sync':
+                this.syncClient(data);
+                break;
+            case 'end_sing_along':
+                this.endSingAlong();
+                break;
+            default:
+                console.log('Unknown action:', data.action);
+                showErrorSnackbar(data.message);
+                localStorage.removeItem('sing_along_id');
+                localStorage.removeItem('is_host');
+        }
+    }
+
+    createSingAlong(singAlongId: string, description: string, isPrivate: boolean, songList: string[]) {
+        if (!this.socket) {
+            this.setupWebSocket(() => {
+                if (singAlongId && this.socket) {
+                    const data: SingAlongData = {
+                        action: 'create',
+                        sing_along_id: singAlongId,
+                        description: description,
+                        song_list: songList,
+                        private: isPrivate
+                    };
+                    this.socket.send(JSON.stringify(data));
+
+                    this.openCreateSingAlongDialogButton.style.display = 'none';
+                    this.openJoinSingAlongDialogButton.style.display = 'none';
+                    this.leaveSingAlongButton.style.display = 'none';
+                    this.endSingAlongButton.style.display = 'inline-flex';
+                }
+            });
+        } else {
+            if (singAlongId && this.socket) {
+                const data: SingAlongData = {
+                    action: 'create',
+                    sing_along_id: singAlongId,
+                    description: description,
+                    song_list: songList,
+                    private: isPrivate
+                };
+                this.socket.send(JSON.stringify(data));
+
+                this.openCreateSingAlongDialogButton.style.display = 'none';
+                this.openJoinSingAlongDialogButton.style.display = 'none';
+                this.leaveSingAlongButton.style.display = 'none';
+                this.endSingAlongButton.style.display = 'inline-flex';
+            }
+        }
+    }
+
+    joinSingAlong(singAlongId: string, isHost: boolean = false) {
+        if (!this.socket) {
+            this.setupWebSocket(() => {
+                if (singAlongId && this.socket) {
+                    const data: SingAlongData = {
+                        action: 'join',
+                        sing_along_id: singAlongId,
+                        is_host: isHost
+                    };
+                    this.socket.send(JSON.stringify(data));
+                    this.openCreateSingAlongDialogButton.style.display = 'none';
+                    this.openJoinSingAlongDialogButton.style.display = 'none';
+                    this.leaveSingAlongButton.style.display = 'inline-flex';
+                    this.endSingAlongButton.style.display = 'none';
+                }
+            });
+        } else {
+            if (singAlongId && this.socket) {
+                const data: SingAlongData = {
+                    action: 'join',
+                    sing_along_id: singAlongId,
+                    is_host: isHost
+                };
+                this.socket.send(JSON.stringify(data));
+                this.openCreateSingAlongDialogButton.style.display = 'none';
+                this.openJoinSingAlongDialogButton.style.display = 'none';
+                this.leaveSingAlongButton.style.display = 'inline-flex';
+                this.endSingAlongButton.style.display = 'none';
+            }
+        }
+    }
+
+    changeSong(song: string) {
+        if (this.socket) {
+            const data: SingAlongData = {
+                action: 'change_song',
+                song: song
+            };
+            this.socket.send(JSON.stringify(data));
+        }
+    }
+
+    getSong() {
+        if (this.socket) {
+            const data: SingAlongData = {
+                action: 'get_song',
+            };
+            this.socket.send(JSON.stringify(data));
+        }
+    }
+
+    syncClient(data: any) {
+        const singAlongId = localStorage.getItem('sing_along_id');
+        const isHost = localStorage.getItem('is_host') === 'true';
+        if (singAlongId && !isHost) {
+            const songData = this.getFileDataFromSongName(data.current_song);
+            if (songData) {
+                this.songContainer.displaySong(songData);
+            }
+            showSuccessSnackbar('Synced with Sing-Along.');
+        }
+    }
+
+    leaveSingAlong() {
+        if (this.socket) {
+            const data: SingAlongData = {
+                action: 'leave'
+            };
+            this.socket.send(JSON.stringify(data));
+            this.socket.close();
+            this.socket = null;
+        }
+        localStorage.removeItem('sing_along_id');
+        localStorage.removeItem('is_host');
+        showSuccessSnackbar('Left Sing-Along.');
+
+        this.openCreateSingAlongDialogButton.style.display = 'inline-flex';
+        this.openJoinSingAlongDialogButton.style.display = 'inline-flex';
+        this.leaveSingAlongButton.style.display = 'none';
+        this.endSingAlongButton.style.display = 'none';
+    }
+
+    endSingAlong() {
+        if (this.socket) {
+            const data: SingAlongData = {
+                action: 'end'
+            };
+            this.socket.send(JSON.stringify(data));
+            this.socket.close();
+            this.socket = null;
+        }
+        localStorage.removeItem('sing_along_id');
+        localStorage.removeItem('is_host');
+
+        showSuccessSnackbar('Sing-Along ended.');
+        this.openCreateSingAlongDialogButton.style.display = 'inline-flex';
+        this.openJoinSingAlongDialogButton.style.display = 'inline-flex';
+        this.leaveSingAlongButton.style.display = 'none';
+        this.endSingAlongButton.style.display = 'none';
+    }
+
+    updateUIWithNewSong(song: string) {
+        console.log('Now playing:', song);
+        const songData = this.getFileDataFromSongName(song);
+        if (songData) {
+            this.songContainer.displaySong(songData);
+        }
+    }
+
+    getFileDataFromSongName(songName: string): FileData | undefined {
+        if (this.flattendFileList !== undefined) {
+            return this.flattendFileList.find(file => file.fileName === songName);
+        }
+        return undefined;
+    }
+
+    showNav(){
+        this.navBar.style.display = "block";
+    }
+
+    hideNav(){
+        this.navBar.style.display = "none";
     }
 }
-
 
 window.addEventListener('beforeinstallprompt', (e: Event) => {
     e.preventDefault();
@@ -459,7 +1485,6 @@ window.addEventListener('beforeinstallprompt', (e: Event) => {
 
     console.log('beforeinstallprompt event fired');
 });
-
 
 function escapeRegExp(string: string): string {
     return string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
@@ -500,53 +1525,13 @@ function removeFolderFromCustomFolders(folderName: string) {
     }
 }
 
-async function initGlobalDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('GlobalFiles', 1);
-
-        request.onupgradeneeded = (event) => {
-            const db = (event.target as IDBOpenDBRequest).result;
-            if (!db.objectStoreNames.contains('files')) {
-                db.createObjectStore('files', { keyPath: ['relativePath', 'fileName'] });
-            }
-        };
-
-        request.onsuccess = (event) => {
-            const db = (event.target as IDBOpenDBRequest).result;
-            resolve(db);
-        };
-
-        request.onerror = (event) => {
-            reject((event.target as IDBOpenDBRequest).error);
-        };
-    });
-}
-
-async function initCustomCollectionDB(): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('CustomCollections', 1);
-
-        request.onupgradeneeded = (event) => {
-            const db = (event.target as IDBOpenDBRequest).result;
-            if (!db.objectStoreNames.contains('files')) {
-                db.createObjectStore('files', { keyPath: ['relativePath', 'fileName'] });
-            }
-        };
-
-        request.onsuccess = (event) => {
-            const db = (event.target as IDBOpenDBRequest).result;
-            resolve(db);
-        };
-
-        request.onerror = (event) => {
-            reject((event.target as IDBOpenDBRequest).error);
-        };
-    });
-}
-
-async function cleanUpCustomDB(selectedFolders: string[], db: IDBDatabase) {
+async function cleanUpCustomDB(selectedFolders: string[]) {
+    const customCollectionsDB = homePage.customCollectionsDB;
+    if (!customCollectionsDB) {
+        return;
+    }
     return new Promise<void>((resolve, reject) => {
-        const transaction = db.transaction('files', 'readwrite');
+        const transaction = customCollectionsDB.transaction('files', 'readwrite');
         const store = transaction.objectStore('files');
         const request = store.openCursor();
 
@@ -569,284 +1554,12 @@ async function cleanUpCustomDB(selectedFolders: string[], db: IDBDatabase) {
     });
 }
 
-async function storeFilesinDB(files: FileData[], db: IDBDatabase) {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('files', 'readwrite');
-        const store = transaction.objectStore('files');
-
-        files.forEach(file => {
-            if (file.relativePath && file.fileName) {
-                store.put(file);
-            } else {
-                console.error('File data missing relativePath or fileName:', file);
-            }
-        });
-
-        transaction.oncomplete = () => resolve(true);
-        transaction.onerror = () => reject(transaction.error);
-    });
-}
-
-async function fetchAllPublicFolders(): Promise<string[]> {
-    const response = await fetch('/api/public_folders');
-    const folders: string[] = await response.json();
-    return folders;
-}
-
-async function fetchGlobalFiles(db: IDBDatabase): Promise<FileData[]> {
-    const response = await fetch('/api/files?type=global');
-    const files: FileData[] = await response.json();
-
-    try {
-        await storeFilesinDB(files, db);
-    } catch (error) {
-        console.error("Error storing files in IndexedDB:", error);
-    }
-
-    return files;
-}
-
-async function fetchCustomCollectionFiles(db: IDBDatabase, foldersData: FolderData[]): Promise<FileData[]> {
-    const params = new URLSearchParams({ type: 'custom' });
-    const folders = foldersData.map(folder => folder.folderName);
-    folders.forEach(folder => params.append('folders', folder));
-
-    const response = await fetch(`/api/files?${params.toString()}`);
-    const files: FileData[] = await response.json();
-
-    try {
-        await storeFilesinDB(files, db);
-    } catch (error) {
-        console.error("Error storing files in IndexedDB:", error);
-    }
-    return files;
-}
-
-function flattenFileTree(tree: any, basePath: string = '') {
-    const naturalSort = (a: string, b: string) => {
-        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-    };
-
-    Object.keys(tree).sort(naturalSort).forEach(key => {
-        const value = tree[key];
-        const currentPath = basePath ? `${basePath}\\${key}` : key;
-
-        if (Array.isArray(value)) {
-            value.forEach((file: FileData) => {
-                flattenedFileList.push(file);
-            });
-        } else {
-            flattenFileTree(value, currentPath);
-        }
-    });
-}
-
-async function updateFileSelectionVisuals() {
-    const fileItems = document.querySelectorAll('.file-item');
-    fileItems.forEach(item => {
-        const fileName = item.getAttribute('data-file-name');
-        const icon = item.querySelector('i') as HTMLElement;
-        if (isSelectableMode) {
-            item.classList.add('selectable');
-            icon.textContent = 'check_box';
-        } else {
-            item.classList.remove('selectable');
-            icon.textContent = 'check_box_outline_blank';
-        }
-
-        if (fileName && selectedFiles.has(fileName)) {
-            item.classList.add('selected');
-            icon.textContent = 'check_box';
-        } else {
-            item.classList.remove('selected');
-            icon.textContent = 'check_box_outline_blank';
-        }
-    });
-}
-
-function getFileButton(file: FileData): HTMLElement {
-    const fileContainer = document.createElement('div');
-
-    const icon = document.createElement('i');
-    icon.textContent = selectedFiles.has(file.fileName) ? 'check_box' : 'check_box_outline_blank';
-    icon.className = 's2';
-
-    const header = document.createElement('h6');
-    header.className = 'small s10';
-    header.textContent = file.fileName.replace('.txt', '');
-
-    const fileButton = document.createElement('a');
-    fileButton.setAttribute('data-file-name', file.fileName);
-    fileButton.className = 'file-item padding surface-container no-round wave wrap grid';
-    fileButton.appendChild(header);
-    fileButton.insertBefore(icon, fileButton.firstChild);
-
-
-    fileContainer.appendChild(fileButton);
-
-    if (selectedFiles.has(file.fileName)) {
-        fileButton.classList.add('selected');
-    }
-
-    let touchMoved = false;
-
-    const startLongPress = () => {
-        longPressTimer = window.setTimeout(() => {
-            const selectSongsToggle = document.getElementById('select-songs-toggle') as HTMLInputElement;
-            selectSongsToggle.checked = !selectSongsToggle.checked;
-            const event = new Event('change');
-            selectSongsToggle.dispatchEvent(event);
-        }, LONG_PRESS_DURATION);
-    };
-
-    const cancelLongPress = () => {
-        if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-        }
-    };
-
-    fileButton.addEventListener('mousedown', startLongPress);
-    fileButton.addEventListener('mouseup', cancelLongPress);
-    fileButton.addEventListener('mouseleave', cancelLongPress);
-
-    fileButton.addEventListener('touchstart', (event) => {
-        touchMoved = false;
-        startLongPress();
-    });
-
-    fileButton.addEventListener('touchend', () => {
-        if (!touchMoved) {
-            cancelLongPress();
-        }
-    });
-
-    fileButton.addEventListener('touchmove', () => {
-        touchMoved = true;
-        cancelLongPress();
-    });
-
-    fileButton.addEventListener('click', (event) => {
-        if (isSelectableMode) {
-            event.preventDefault();
-            fileButton.classList.toggle('selected');
-            if (fileButton.classList.contains('selected')) {
-                selectedFiles.add(file.fileName);
-                icon.textContent = 'check_box';
-            } else {
-                selectedFiles.delete(file.fileName);
-                icon.textContent = 'check_box_outline_blank';
-            }
-        } else {
-            displayFileContent(file);
-        }
-    });
-
-    return fileContainer;
-}
-
-function getCustomFileButton(file: FileData, showText: boolean = true): HTMLElement {
-    const fileButton = document.createElement('a');
-    fileButton.className = 'custom-file-item padding surface-container no-round wave wrap';
-    if (showText) {
-        fileButton.textContent = file.fileName.replace('.txt', '');
-    }
-    fileButton.setAttribute('data-file-name', file.fileName);
-    fileButton.addEventListener('click', (event) => {
-        event.preventDefault();
-        displayFileContent(file);
-    });
-    return fileButton;
-}
-
-function getAllFilesFromDB(db: IDBDatabase): Promise<FileData[]> {
-    return new Promise((resolve, reject) => {
-        const transaction = db.transaction('files', 'readonly');
-        const store = transaction.objectStore('files');
-        const getAllRequest = store.getAll();
-
-        getAllRequest.onsuccess = () => {
-            resolve(getAllRequest.result);
-        };
-
-        getAllRequest.onerror = () => {
-            reject(getAllRequest.error);
-        };
-    });
-}
-
-async function displayFileContent(file: FileData) {
-    try {
-        this.currentParagraphIndex = 0;
-        currentSongIndex = flattenedFileList.findIndex(song => song === file); // Set the current index
-        const fileContentDiv = document.getElementById('file-content') as HTMLDivElement;
-        const fileNameHeader = document.getElementById('file-name-header') as HTMLHeadingElement;
-        if (file) {
-            const formattedContent = file.fileContent.replace(/\n/g, '<br>');
-            fileNameHeader.textContent = file.fileName.replace('.txt', '');
-            fileContentDiv.innerHTML = wrapInParagraphsWithSpans(formattedContent);
-
-            ui('#song');
-
-            window.scrollTo({ top: 0, behavior: 'instant' });
-            const songNav = document.getElementById('song-nav') as HTMLElement;
-            const songsNav = document.getElementById('home-nav') as HTMLElement;
-
-            songNav.style.display = 'block';
-            songsNav.style.display = 'none';
-            if (focusEnabled) {
-                focusParagraph(0);
-            }
-            searchSongContents();
-            const singAlongId = localStorage.getItem('sing_along_id');
-            const isHost = localStorage.getItem('is_host') === 'true';
-            if (singAlongId && isHost) {
-                changeSong(file.fileName);
-            }
-        } else {
-            fileContentDiv.textContent = 'File not found in IndexedDB.';
-        }
-    } catch (error) {
-        console.error("Error retrieving file from IndexedDB:", error);
-    }
-}
-
-function updateIcon(mode: string) {
-    const iconElements = document.querySelectorAll("#toggle-theme i");
-    iconElements.forEach((iconElement) => {
-        iconElement.textContent = mode === "dark" ? "light_mode" : "dark_mode";
-    });
-};
-
 function getFontSize(): number {
     return parseInt(localStorage.getItem('fontSize') || '16', 10);
 }
 
-function focusParagraph(index: number) {
-    const paragraphs = document.querySelectorAll('#file-content p');
-    paragraphs.forEach((p, i) => {
-        if (i === index) {
-            p.classList.add('active-paragraph');
-            p.classList.add('blur-none');
-
-            const rect = p.getBoundingClientRect();
-            const offset = window.innerHeight / 2 - rect.height / 2;
-            window.scrollTo({
-                top: window.scrollY + rect.top - offset,
-                behavior: 'smooth' // Scroll smoothly to the position
-            });
-        } else {
-            p.classList.remove('active-paragraph');
-            p.classList.remove('blur-none');
-        }
-    });
-
-    const fileContent = document.getElementById('file-content');
-    if (focusEnabled && fileContent) {
-        fileContent.classList.add('blur');
-    } else if (fileContent) {
-        fileContent.classList.remove('blur');
-    }
+function setFontSize(size: number) {
+    localStorage.setItem('fontSize', size.toString());
 }
 
 function showSuccessSnackbar(message: string) {
@@ -872,30 +1585,9 @@ function showErrorSnackbar(message: string) {
     ui('#error-snackbar', 6000);
 }
 
-function moveToPreviousSong() {
-    if (currentSongIndex > 0) {
-        currentSongIndex--;
-        const previousSong = flattenedFileList[currentSongIndex];
-        displayFileContent(previousSong);
-    }
-}
-
-function moveToNextSong() {
-    if (currentSongIndex < flattenedFileList.length - 1) {
-        currentSongIndex++;
-        const nextSong = flattenedFileList[currentSongIndex];
-        displayFileContent(nextSong);
-    }
-}
-
-async function hashChanged() {
+function hashChanged() {
     const tabs = document.querySelectorAll('.tabs a');
     const pages = document.querySelectorAll('.page');
-    const songNav = document.getElementById('song-nav') as HTMLElement;
-    const songsNav = document.getElementById('home-nav') as HTMLElement;
-    const singAlongNav = document.getElementById('sing-along-nav') as HTMLElement;
-    const urlParams = new URLSearchParams(window.location.search);
-    const song = urlParams.get('song');
     const hash = window.location.hash;
 
     tabs.forEach(tab => {
@@ -911,52 +1603,33 @@ async function hashChanged() {
     pages.forEach(page => {
         if (page.id === hash.substring(1)) {
             page.classList.add('active');
-            if (hash === '#song') {
-                if (songNav) {
-                    songNav.style.display = 'block';
-                    songsNav.style.display = 'none';
-                    singAlongNav.style.display = 'none';
-                }
-            } else if (hash === '#home') {
-                if (songsNav) {
-                    songNav.style.display = 'none';
-                    songsNav.style.display = 'block';
-                    singAlongNav.style.display = 'none';
-                }
+            if (hash === '#home') {
+                homePage.showNav();
+                songPage.hideNav();
+                singAlongPage.hideNav();
+            } else if (hash === '#song') {
+                homePage.hideNav();
+                songPage.showNav();
+                singAlongPage.hideNav();
             } else if (hash === '#sing-along-page') {
-                if (singAlongNav) {
-                    songNav.style.display = 'none';
-                    songsNav.style.display = 'none';
-                    singAlongNav.style.display = 'block';
-                }
+                homePage.hideNav();
+                songPage.hideNav();
+                singAlongPage.showNav();
             }
         } else {
             page.classList.remove('active');
         }
     });
-
-    if (hash === '#song') {
-        const db = await initGlobalDB();
-        if (song) {
-            // await displayFileContent(song, db, false);
-        }
-    }
 }
 
-async function toggleFocus() {
-    focusEnabled = !focusEnabled;
-    if (focusEnabled) {
-        focusParagraph(this.currentParagraphIndex);
-    } else {
-        removeFocusFromAllParagraphs();
-        const fileContent = document.getElementById('file-content');
-        if (fileContent) {
-            fileContent.classList.remove('blur');
-        }
-    }
-}
+function updateIcon(mode: string) {
+    const iconElements = document.querySelectorAll("#toggle-theme i");
+    iconElements.forEach(iconElement => {
+        iconElement.textContent = mode === "dark" ? "light_mode" : "dark_mode";
+    });
+};
 
-async function toggleTheme() {
+function toggleTheme() {
     const currentMode = localStorage.getItem("mode") || "dark";
     if (currentMode === "light") {
         localStorage.setItem("mode", "dark");
@@ -969,281 +1642,30 @@ async function toggleTheme() {
     }
 }
 
-async function addFileToCustomDB(db: IDBDatabase, fileData: FileData) {
-    return new Promise<void | undefined>((resolve, reject) => {
-        const transaction = db.transaction(['files'], 'readwrite');
-        const store = transaction.objectStore('files');
-        const request = store.add(fileData);
-        request.onsuccess = () => resolve();
-        request.onerror = (event) => reject();
-    });
-}
-
-function setupWebSocket(onOpenCallback?: () => void) {
-    socket = new WebSocket(socketUrl);
-
-    socket.onopen = () => {
-        if (onOpenCallback) {
-            onOpenCallback();
-        }
-    };
-
-    socket.onmessage = (event) => {
-        const data: SingAlongData = JSON.parse(event.data);
-        console.log(data);
-        handleWebSocketMessage(data);
-    };
-
-    socket.onclose = () => {
-        console.log('WebSocket connection closed');
-    };
-
-    socket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-    };
-}
-
-
-function handleWebSocketMessage(data: SingAlongData) {
-    switch (data.action) {
-        case 'created':
-            localStorage.setItem('sing_along_id', data.sing_along_id);
-            localStorage.setItem('is_host', 'true');
-            break;
-        case 'joined':
-            localStorage.setItem('sing_along_id', data.sing_along_id);
-            localStorage.setItem('is_host', 'false');
-            getSong();
-            break;
-        case 'change_song':
-            updateUIWithNewSong(data.song);
-            break;
-        case 'get_song':
-            const songData = getFileDataFromSongName(data.song);
-            if (songData) {
-                displaySingAlongFileContent(songData);
-            }
-            break;
-        case 'sync':
-            syncClient(data);
-            break;
-        case 'end_sing_along':
-            endSingAlong();
-            break;
-        default:
-            console.log('Unknown action:', data.action);
-            showErrorSnackbar(data.message);
-            localStorage.removeItem('sing_along_id');
-            localStorage.removeItem('is_host');
-    }
-}
-
-function createSingAlong(singAlongId: string, description: string, isPrivate: boolean, songList: string[]) {
-    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
-    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
-    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
-    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
-
-    if (!socket) {
-        setupWebSocket(() => {
-            if (singAlongId && socket) {
-                const data: SingAlongData = {
-                    action: 'create',
-                    sing_along_id: singAlongId,
-                    description: description,
-                    song_list: songList,
-                    private: isPrivate
-                };
-                socket.send(JSON.stringify(data));
-
-                createSingAlongButton.style.display = 'none';
-                joinSingAlongButton.style.display = 'none';
-                leaveSingAlongButton.style.display = 'none';
-                endSingAlongButton.style.display = 'inline-flex';
-            }
-        });
-    } else {
-        if (singAlongId && socket) {
-            const data: SingAlongData = {
-                action: 'create',
-                sing_along_id: singAlongId,
-                description: description,
-                song_list: songList,
-                private: isPrivate
-            };
-            socket.send(JSON.stringify(data));
-
-            createSingAlongButton.style.display = 'none';
-            joinSingAlongButton.style.display = 'none';
-            leaveSingAlongButton.style.display = 'none';
-            endSingAlongButton.style.display = 'inline-flex';
-        }
-    }
-}
-
-function joinSingAlong(singAlongId: string, isHost: boolean = false) {
-    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
-    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
-    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
-    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
-
-    if (!socket) {
-        setupWebSocket(() => {
-            if (singAlongId && socket) {
-                const data: SingAlongData = {
-                    action: 'join',
-                    sing_along_id: singAlongId,
-                    is_host: isHost
-                };
-                socket.send(JSON.stringify(data));
-                createSingAlongButton.style.display = 'none';
-                joinSingAlongButton.style.display = 'none';
-                leaveSingAlongButton.style.display = 'inline-flex';
-                endSingAlongButton.style.display = 'none';
-            }
-        });
-    } else {
-        if (singAlongId && socket) {
-            const data: SingAlongData = {
-                action: 'join',
-                sing_along_id: singAlongId,
-                is_host: isHost
-            };
-            socket.send(JSON.stringify(data));
-            createSingAlongButton.style.display = 'none';
-            joinSingAlongButton.style.display = 'none';
-            leaveSingAlongButton.style.display = 'inline-flex';
-            endSingAlongButton.style.display = 'none';
-        }
-    }
-}
-
-
-function changeSong(song: string) {
-    if (socket) {
-        const data: SingAlongData = {
-            action: 'change_song',
-            song: song
-        };
-        socket.send(JSON.stringify(data));
-    }
-}
-
-function getSong() {
-    if (socket) {
-        const data: SingAlongData = {
-            action: 'get_song',
-        };
-        socket.send(JSON.stringify(data));
-    }
-}
-
-function syncClient(data: any) {
-    const singAlongId = localStorage.getItem('sing_along_id');
-    const isHost = localStorage.getItem('is_host') === 'true';
-    if (singAlongId && !isHost) {
-        const songData = getFileDataFromSongName(data.current_song);
-        if (songData) {
-            displaySingAlongFileContent(songData);
-        }
-        showSuccessSnackbar('Synced with Sing-Along.');
-    }
-}
-
-// Example function to leave the sing-along
-function leaveSingAlong() {
-    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
-    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
-    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
-    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
-
-    if (socket) {
-        const data: SingAlongData = {
-            action: 'leave'
-        };
-        socket.send(JSON.stringify(data));
-        socket.close();
-        socket = null;
-    }
-    localStorage.removeItem('sing_along_id');
-    localStorage.removeItem('is_host');
-    showSuccessSnackbar('Left Sing-Along.');
-
-    createSingAlongButton.style.display = 'inline-flex';
-    joinSingAlongButton.style.display = 'inline-flex';
-    leaveSingAlongButton.style.display = 'none';
-    endSingAlongButton.style.display = 'none';
-}
-
-// Example function to end the sing-along
-function endSingAlong() {
-    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
-    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
-    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
-    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
-
-    if (socket) {
-        const data: SingAlongData = {
-            action: 'end'
-        };
-        socket.send(JSON.stringify(data));
-        socket.close();
-        socket = null;
-    }
-    localStorage.removeItem('sing_along_id');
-    localStorage.removeItem('is_host');
-
-    showSuccessSnackbar('Sing-Along ended.');
-    createSingAlongButton.style.display = 'inline-flex';
-    joinSingAlongButton.style.display = 'inline-flex';
-    leaveSingAlongButton.style.display = 'none';
-    endSingAlongButton.style.display = 'none';
-}
-
-function updateUIWithNewSong(song: string) {
-    console.log('Now playing:', song);
-    const songData = getFileDataFromSongName(song);
-    if (songData) {
-        displaySingAlongFileContent(songData);
-    }
-}
-
-function getFileDataFromSongName(songName: string): FileData | undefined {
-    const fileData = flattenedFileList.find(file => file.fileName === songName);
-    return fileData;
-}
-
 document.addEventListener('DOMContentLoaded', async () => {
     const VERSION = localStorage.getItem('latestVersion') || '1.0.0';
     const appNameVersion = document.getElementById('app-name-version') as HTMLHeadingElement;
     appNameVersion.textContent = `Hutterite Bookshelf v${VERSION}`;
 
+    singAlongPage = new SingAlongPage('sing-along-page', 'sing-along-nav');
+    songPage = new SongPage('song', 'song-nav')
+    homePage = new HomePage('home', 'home-nav');
+
+    singAlongPage.setReferences(songPage, homePage);
+    songPage.setReferences(singAlongPage, homePage);
+    homePage.setReferences(songPage, singAlongPage);
+
     const tabs = document.querySelectorAll('.tabs a');
-    const songNav = document.getElementById('song-nav') as HTMLElement;
-    const songsNav = document.getElementById('home-nav') as HTMLElement;
-    const singAlongNav = document.getElementById('sing-along-nav') as HTMLElement;
-    const selectSongsToggle = document.getElementById('select-songs-toggle') as HTMLInputElement;
-    const clearSelectionButton = document.getElementById('clear-selection') as HTMLButtonElement;
     const customFolderList = document.getElementById('custom-folders-list') as HTMLDivElement;
     const installPWA = document.getElementById('install-pwa') as HTMLButtonElement;
     const installIcon = installPWA.querySelector('i') as HTMLElement;
-    const joinSingAlongButton = document.querySelector('#sing-along-join') as HTMLButtonElement;
-    const createSingAlongButton = document.querySelector('#sing-along-create') as HTMLButtonElement;
-    const createSingAlongSubmitButton = document.querySelector('#create-sing-along-submit') as HTMLButtonElement;
-    const endSingAlongButton = document.querySelector('#sing-along-end') as HTMLButtonElement;
-    const leaveSingAlongButton = document.querySelector('#sing-along-logout') as HTMLButtonElement;
-    const syncSingAlongButton = document.querySelector('#sing-along-sync') as HTMLButtonElement;
 
-    const homePage = new HomePage('home');
-    const songPage = new SongPage('song')
-    const singAlongPage = new SingAlongPage('sing-along-page');
 
     if (isMobileDevice()) {
         installIcon.textContent = `install_mobile`;
     } else {
         installIcon.textContent = `install_desktop`;
     }
-    clearSelectionButton.style.display = 'none';
 
     const currentHash = window.location.hash;
 
@@ -1264,29 +1686,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 top: 0,
                 behavior: 'smooth'
             });
-            if (targetPageId === '#song') {
-                if (focusEnabled) {
-                    focusParagraph(this.currentParagraphIndex);
+
+            if (targetPageId === '#home') {
+                homePage.hideNav();
+                songPage.showNav();
+                singAlongPage.hideNav();
+            } else if (targetPageId === '#song') {
+                if (songPage.songContainer.focusEnabled) {
+                    songPage.songContainer.focusParagraph();
                 }
-            }
-            if (targetPageId === '#song') {
-                if (songNav) {
-                    songNav.style.display = 'block';
-                    songsNav.style.display = 'none';
-                    singAlongNav.style.display = 'none';
-                }
-            } else if (targetPageId === '#home') {
-                if (songsNav) {
-                    songNav.style.display = 'none';
-                    songsNav.style.display = 'block';
-                    singAlongNav.style.display = 'none';
-                }
+                homePage.hideNav();
+                songPage.showNav();
+                singAlongPage.hideNav();
             } else if (targetPageId === '#sing-along-page') {
-                if (singAlongNav) {
-                    songNav.style.display = 'none';
-                    songsNav.style.display = 'none';
-                    singAlongNav.style.display = 'block';
+                if (singAlongPage.songContainer.focusEnabled) {
+                    singAlongPage.songContainer.focusParagraph();
                 }
+                homePage.hideNav();
+                songPage.hideNav();
+                singAlongPage.showNav();
             }
         });
     });
@@ -1305,12 +1723,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     document.querySelector('#text-increase')?.addEventListener('click', () => {
         const newSize = getFontSize() + 1;
-        updateFontSize(newSize);
+        setFontSize(newSize);
     });
     document.querySelector('#text-decrease')?.addEventListener('click', () => {
         const newSize = Math.max(getFontSize() - 1, 10);
-        updateFontSize(newSize);
+        setFontSize(newSize);
     });
+    document.querySelector('#toggle-theme')?.addEventListener('click', toggleTheme);
     document.querySelector('#nav-bar-open')?.addEventListener('click', () => {
         ui('#nav-bar');
     });
@@ -1322,7 +1741,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     document.querySelector('#toggle-collections')?.addEventListener('click', async () => {
         customFolderList.innerHTML = '';
-        const folders = getCustomFoldersFromLocalStorage();
+        const folders = homePage.getCustomFoldersFromLocalStorage();
         const folderNames = folders.map(folder => folder.folderName);
 
         publicFolders.forEach(folder => {
@@ -1374,303 +1793,79 @@ document.addEventListener('DOMContentLoaded', async () => {
         const customFolders = getCustomFoldersFromLocalStorage();
         const selectedFolders = customFolders.map(folder => folder.folderName);
 
-        const [globalDB, customDB] = await Promise.all([
-            initGlobalDB(),
-            initCustomCollectionDB(),
-        ]);
-
-        cleanUpCustomDB(selectedFolders, customDB);
-
-        customDBFiles = await fetchCustomCollectionFiles(customDB, customFolders),
-
-            await renderFileList(globalDBFiles, globalDB, customDBFiles, customDB);
+        cleanUpCustomDB(selectedFolders);
+        customDBFiles = await homePage.fetchCustomCollectionFiles();
+        await homePage.renderFileList();
 
         showSuccessSnackbar('Collections updated successfully.');
-    });
-    document.querySelector('#add-group')?.addEventListener('click', () => {
-        const selectedFilesList = document.getElementById('selected-songs-list') as HTMLElement;
-        let count = 1;
-        selectedFilesList.innerHTML = '';
-
-        selectedFiles.forEach(fileName => {
-            const fileButton = document.createElement('a');
-            fileButton.className = 'file-item padding no-round wave wrap';
-            fileButton.textContent = count++ + '. ' + fileName.replace('.txt', '');
-            selectedFilesList.appendChild(fileButton);
-        });
-        ui('#add-song-dialog');
-    });
-    document.querySelector('#add-group-dialog-submit')?.addEventListener('click', async () => {
-        const folderInput = document.getElementById('folder-name-input') as HTMLInputElement;
-        const checkBoxInput = document.getElementById('folder-is-private-checkbox') as HTMLInputElement;
-        const isPrivate = checkBoxInput.checked;
-        const folderName = folderInput.value.trim().replace("/", "\\");
-        const filesToUpload: FileData[] = [];
-        const adminAccess = true;
-
-        const [globalDB, customDB] = await Promise.all([
-            initGlobalDB(),
-            initCustomCollectionDB(),
-        ]);
-
-        [globalDBFiles, customDBFiles] = await Promise.all([
-            getAllFilesFromDB(globalDB),
-            getAllFilesFromDB(customDB),
-        ]);
-
-        for (const file of globalDBFiles) {
-            if (selectedFiles.has(file.fileName)) {
-                filesToUpload.push(file);
-            }
-        }
-        if (selectedFiles.size <= 0) {
-            showErrorSnackbar('No files selected.');
-            return;
-        }
-
-        const files = await Promise.all(
-            filesToUpload.map(async (file) => {
-                return {
-                    fileName: file.fileName,
-                    fileContent: file.fileContent,
-                };
-            })
-        );
-
-        const data = {
-            folderName,
-            isPrivate,
-            files,
-        };
-
-
-        try {
-            const response = await fetch('/api/files', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-
-            if (!response.ok) {
-                showErrorSnackbar('Error uploading files: ' + response.statusText);
-            }
-
-            const text = await response.text();
-            const result = text ? JSON.parse(text) : {};
-
-            if (result.status === 'success') {
-                for (const file of filesToUpload) {
-                    storeFilesinDB([{
-                        fileName: file.fileName,
-                        fileContent: file.fileContent,
-                        relativePath: folderName,
-                        isPrivate: isPrivate,
-                    }], customDB);
-                }
-                addFolderToCustomFolders(folderName, adminAccess);
-                const customFolders = getCustomFoldersFromLocalStorage();
-
-                customDBFiles = await fetchCustomCollectionFiles(customDB, customFolders),
-                    publicFolders = await fetchAllPublicFolders();
-
-                await renderFileList(globalDBFiles, globalDB, customDBFiles, customDB);
-
-                showSuccessSnackbar('Files successfully added to custom collections.')
-            } else {
-                showErrorSnackbar(result.message || 'Unknown error');
-            }
-        } catch (error) {
-            console.error(error);
-            showErrorSnackbar('Error sending request: ' + error);
-        }
-    });
-    document.querySelector('#add-group-dialog-close')?.addEventListener('click', () => {
-        ui('#add-song-dialog');
-    });
-    selectSongsToggle.addEventListener('change', async () => {
-        isSelectableMode = selectSongsToggle.checked;
-        if (isSelectableMode) {
-            clearSelectionButton.style.display = 'block';
-        } else {
-            clearSelectionButton.style.display = 'none';
-        }
-        const fileItems = document.querySelectorAll('.file-item');
-        fileItems.forEach(fileButton => {
-            const fileName = fileButton.getAttribute('data-file-name');
-            if (isSelectableMode) {
-                fileButton.classList.add('selectable');
-                if (fileName && selectedFiles.has(fileName)) {
-                    fileButton.classList.add('selected');
-                }
-            } else {
-                fileButton.classList.remove('selectable');
-                fileButton.classList.remove('selected');
-            }
-        });
-    });
-    clearSelectionButton.addEventListener('click', async () => {
-        selectedFiles.clear();
-        updateFileSelectionVisuals();
-    });
-    document.querySelector('#paragraph-focus')?.addEventListener('click', toggleFocus);
-    document.querySelector('#previous-paragraph')?.addEventListener('click', moveToPreviousParagraph);
-    document.querySelector('#next-paragraph')?.addEventListener('click', moveToNextParagraph);
-    document.querySelector('#toggle-theme')?.addEventListener('click', toggleTheme);
-    document.querySelector('#previous-song')?.addEventListener('click', moveToPreviousSong);
-    document.querySelector('#next-song')?.addEventListener('click', moveToNextSong);
-    document.querySelector('#sing-along-create')?.addEventListener('click', () => {
-        ui('#create-sing-along-dialog');
-    });
-    joinSingAlongButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        await fetch('/api/public_sing_alongs')
-            .then(response => response.json())
-            .then(data => {
-                const singAlongs = data.map((singAlong: { name: string; description: string; }) => {
-                    return {
-                        name: singAlong.name,
-                        description: singAlong.description,
-                    };
-                });
-                const singAlongIdContainer = document.getElementById('sing-along-id-container') as HTMLDivElement;
-                singAlongIdContainer.innerHTML = '';
-                const singAlongSelect = document.getElementById('sing-along-id-container') as HTMLDivElement;
-                singAlongs.forEach((singAlong: { name: string; description: string; }) => {
-                    const button: HTMLButtonElement = document.createElement('button');
-                    const icon = document.createElement('i');
-                    icon.textContent = 'login';
-                    const span = document.createElement('span');
-                    span.textContent = singAlong.name + ' - ' + singAlong.description;
-                    button.appendChild(icon);
-                    button.appendChild(span);
-                    button.className = "small-round responsive left-align";
-                    button.id = singAlong.name;
-                    button.addEventListener('click', () => {
-                        const isHost = localStorage.getItem('is_host') === 'true';
-                        joinSingAlong(singAlong.name, isHost);
-                        createSingAlongButton.style.display = 'none';
-                        joinSingAlongButton.style.display = 'none';
-                        leaveSingAlongButton.style.display = 'inline-flex';
-                        endSingAlongButton.style.display = 'none';
-                        syncSingAlongButton.style.display = 'inline-flex';
-                        ui('#join-sing-along-dialog');
-                    });
-                    singAlongSelect.appendChild(button);
-                });
-            });
-        ui('#join-sing-along-dialog');
-    });
-    createSingAlongSubmitButton.addEventListener('click', () => {
-        const singAlongInput = document.getElementById('sing-along-id-label') as HTMLInputElement;
-        const singAlongDescriptionInput = document.getElementById('sing-along-description-label') as HTMLTextAreaElement;
-        const singAlongIsPrivateInput = document.getElementById('sing-along-is-private-checkbox') as HTMLInputElement;
-        const singAlongId = singAlongInput.value.trim();
-        const singAlongDescription = singAlongDescriptionInput.value.trim();
-        const singAlongIsPrivate = singAlongIsPrivateInput.checked;
-        createSingAlong(singAlongId, singAlongDescription, singAlongIsPrivate, []);
-        ui('#create-sing-along-dialog');
-    });
-    endSingAlongButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        endSingAlong();
-    });
-    leaveSingAlongButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        leaveSingAlong();
-    });
-    syncSingAlongButton.addEventListener('click', async (event) => {
-        event.preventDefault();
-        // syncClient();
-    });
-
-    document.querySelector('#song')?.addEventListener('dblclick', (event) => {
-        const mouseEvent = event as MouseEvent; // Explicitly cast the event to MouseEvent
-        const songsPage = mouseEvent.currentTarget as HTMLElement;
-        const pageWidth = songsPage.offsetWidth;
-        const clickX = mouseEvent.clientX;
-
-        if (clickX < pageWidth / 2) {
-            moveToPreviousParagraph();
-        } else {
-            moveToNextParagraph();
-        }
-    });
-    document.getElementById('search-song-content-input')?.addEventListener('input', async function () {
-        searchSongContents();
-    });
-    document.getElementById('search-songs-input')?.addEventListener('input', async function () {
-        const query = (this as HTMLInputElement).value.trim();
-        if (query === '') {
-            if (debounceTimer) {
-                clearTimeout(debounceTimer);
-                debounceTimer = null;
-            }
-            (async () => {
-                filterSongs(query);
-            })();
-            return;
-        }
-        if (debounceTimer) {
-            clearTimeout(debounceTimer);
-        }
-
-        debounceTimer = window.setTimeout(async () => {
-            filterSongs(query);
-        }, 300);
     });
 
     const savedSingAlongId = localStorage.getItem('sing_along_id');
     const isHost = localStorage.getItem('is_host') === 'true';
 
     if (savedSingAlongId) {
-        joinSingAlong(savedSingAlongId, isHost);
+        singAlongPage.joinSingAlong(savedSingAlongId, isHost);
         if (isHost) {
             showSuccessSnackbar('Sing-Along host status restored.');
         } else {
             showSuccessSnackbar('Sing-Along re-joined.');
-            getSong();
+            singAlongPage.getSong();
         }
     }
-    initializeFileContent();
 });
 
-async function init() {
+async function checkForUpdates(registration: ServiceWorkerRegistration) {
+    const response = await fetch('/version');
+    const data = await response.json();
+    const VERSION: string = data.version;
+
+    const currentVersion = localStorage.getItem('latestVersion');
+
+    if (currentVersion !== VERSION) {
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data.action === 'cacheUpdated') {
+                setTimeout(() => {
+                    showUpdateCompleteSnackbar(`Update available: v${VERSION}`);
+                }, 5000);
+            }
+        });
+
+        if (currentVersion !== VERSION) {
+            navigator.serviceWorker.addEventListener('message', event => {
+                if (event.data.action === 'cacheUpdated') {
+                    setTimeout(() => {
+                        showUpdateCompleteSnackbar(`Update available: v${VERSION}`);
+                    }, 5000);
+                }
+            });
+
+            if (registration.active) {
+                registration.active.postMessage({ action: 'newUpdateCache' });
+                console.log('New version detected, updating cache...');
+            }
+            localStorage.setItem('latestVersion', VERSION);
+        } else {
+            if (registration.active) {
+                registration.active.postMessage({ action: 'updateCache' });
+                console.log('Version check passed, updating cache...');
+            }
+        }
+        localStorage.setItem('latestVersion', VERSION);
+    }
+}
+
+async function load() {
+    let savedMode = localStorage.getItem("mode") || "dark";
+    ui("mode", savedMode);
+    updateIcon(savedMode);
     try {
         if ('serviceWorker' in navigator) {
             try {
                 const registration = await navigator.serviceWorker.register('/serviceWorker.js', { scope: '/' });
-
                 console.log('ServiceWorker registration successful with scope: /');
 
                 if (navigator.onLine) {
-                    const response = await fetch('/version');
-                    const data = await response.json();
-                    const VERSION: string = data.version;
-
-                    const currentVersion = localStorage.getItem('latestVersion');
-
-                    if (currentVersion !== VERSION) {
-                        navigator.serviceWorker.addEventListener('message', event => {
-                            if (event.data.action === 'cacheUpdated') {
-                                setTimeout(() => {
-                                    showUpdateCompleteSnackbar(`Update available: v${VERSION}`);
-                                }, 5000);
-                            }
-                        });
-
-                        if (registration.active) {
-                            registration.active.postMessage({ action: 'newUpdateCache' });
-                            console.log('New version detected, updating cache...');
-                        }
-                        localStorage.setItem('latestVersion', VERSION);
-                    } else {
-                        if (registration.active) {
-                            registration.active.postMessage({ action: 'updateCache' });
-                            console.log('Version check passed, updating cache...');
-                        }
-                    }
+                    checkForUpdates(registration);
                 } else {
                     console.log('Offline: Skipping version check');
                 }
@@ -1678,58 +1873,10 @@ async function init() {
                 console.log('ServiceWorker registration failed: ', error);
             }
         }
-
-        // Initialize databases and fetch data
-        const customFolders = getCustomFoldersFromLocalStorage();
-        const [globalDB, customDB] = await Promise.all([
-            initGlobalDB(),
-            initCustomCollectionDB(),
-        ]);
-
-        [globalDBFiles, customDBFiles, publicFolders] = await Promise.all([
-            getAllFilesFromDB(globalDB),
-            getAllFilesFromDB(customDB),
-            fetchAllPublicFolders(),
-        ]);
-
-        if (globalDBFiles.length > 0 || customDBFiles.length > 0) {
-            requestAnimationFrame(() => {
-                renderFileList(globalDBFiles, globalDB, customDBFiles, customDB);
-            });
-        }
-
-        if (navigator.onLine) {
-            const [newGlobalFiles, newCustomFiles] = await Promise.all([
-                fetchGlobalFiles(globalDB),
-                fetchCustomCollectionFiles(customDB, customFolders),
-            ]);
-
-            if (globalDBFiles.length <= 0) {
-                requestAnimationFrame(() => {
-                    renderFileList(newGlobalFiles, globalDB, newCustomFiles, customDB);
-                    globalDBFiles = newGlobalFiles;
-                    customDBFiles = newCustomFiles;
-                });
-            }
-            console.log("Updated indexedDB files from server.");
-        } else if (globalDBFiles.length === 0) {
-            console.log("No internet connection and no data in IndexedDB.");
-        }
     } catch (error) {
         console.error("Error during initialization:", error);
     }
 }
 
-async function initializeUIAndStartApp() {
-    try {
-        let savedMode = localStorage.getItem("mode") || "dark";
-        await ui("mode", savedMode);
-        updateIcon(savedMode);
-        await init();
-    } catch (error) {
-        console.error("Error during UI initialization:", error);
-    }
-}
-
-window.addEventListener('load', initializeUIAndStartApp);
+window.addEventListener('load', load);
 window.addEventListener('popstate', hashChanged);
