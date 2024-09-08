@@ -1,9 +1,31 @@
-html, body, div, article, p, h1, h2, h3, h4, h5, h6, ul, li, span, a, button, input, textarea, select, details, summary, footer, nav {
+html,
+body,
+div,
+article,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+ul,
+li,
+span,
+a,
+button,
+input,
+textarea,
+select,
+details,
+summary,
+footer,
+nav {
     transition: background-color 0.3s ease-in-out, color 0.1s ease;
 }
 
 
-.hidden{
+.hidden {
     display: none !important;
 }
 
@@ -20,7 +42,7 @@ html, body, div, article, p, h1, h2, h3, h4, h5, h6, ul, li, span, a, button, in
     padding: 16px;
 }
 
-.file-item i{
+.file-item i {
     display: none;
 }
 
@@ -52,16 +74,18 @@ p.active-paragraph {
     transition: filter 0.2s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
+p {
+    transition: filter 0.2s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
 p.active-paragraph.blur-none {
     background-color: inherit;
     color: inherit;
-    transition: filter 0.2s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out;
 }
 
 #file-content.blur p:not(.active-paragraph) {
     filter: blur(4px);
     pointer-events: none;
-    transition: filter 0.2s ease-in-out;
 }
 
 #file-content.blur p:not(.active-paragraph),
@@ -82,6 +106,7 @@ details {
     overflow: hidden;
     max-height: 5rem !important;
     transition: all 0.3s ease;
+
     ::-webkit-details-marker {
         display: none;
     }
@@ -103,11 +128,77 @@ h6 .highlight {
     padding-right: 1px;
     display: inline-block !important;
 }
+
 #install-pwa {
     display: none
- }
- @media (display-mode: browser) {
+}
+
+@media (display-mode: browser) {
     #install-pwa {
-      display: flex
+        display: flex
     }
- }
+}
+
+.slide-left {
+    animation: slideOutLeft 0.5s forwards;
+}
+
+@keyframes slideOutLeft {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(-110%);
+        opacity: 0;
+    }
+}
+
+.slide-right {
+    animation: slideOutRight 0.5s forwards;
+}
+
+@keyframes slideOutRight {
+    0% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateX(110%);
+        opacity: 0;
+    }
+}
+
+.slide-in-left {
+    animation: slideInFromLeft 0.5s forwards;
+}
+
+@keyframes slideInFromLeft {
+    0% {
+        transform: translateX(110%);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.slide-in-right {
+    animation: slideInFromRight 0.5s forwards;
+}
+
+@keyframes slideInFromRight {
+    0% {
+        transform: translateX(-110%);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

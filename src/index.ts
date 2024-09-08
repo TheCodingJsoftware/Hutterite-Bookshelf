@@ -147,6 +147,7 @@ class SongContainer {
             }
         }
     }
+
     removeFocusFromAllParagraphs() {
         this.paragraphs.forEach(paragraph => {
             paragraph.classList.remove('active-paragraph');
@@ -301,12 +302,13 @@ class HomePage {
             this.initCustomCollectionDB(),
         ]);
 
-        [this.allDBFiles, this.allCustomCollectionDBFiles, this.publicFolders] = await Promise.all([
+
+        [this.allDBFiles, this.allCustomCollectionDBFiles] = await Promise.all([
             this.getAllFilesFromDB(this.DB),
             this.getAllFilesFromDB(this.customCollectionsDB),
-            this.fetchAllPublicFolders(),
         ]);
 
+        this.publicFolders = await this.fetchAllPublicFolders();
 
         if (this.allDBFiles.length > 0 || this.allCustomCollectionDBFiles.length > 0) {
             requestAnimationFrame(() => {
@@ -322,9 +324,9 @@ class HomePage {
 
             if (this.allDBFiles.length <= 0) {
                 requestAnimationFrame(() => {
-                    this.renderFileList();
                     this.allDBFiles = newGlobalFiles;
                     this.allCustomCollectionDBFiles = newCustomFiles;
+                    this.renderFileList();
                 });
             }
             console.log("Updated indexedDB files from server.");
@@ -442,8 +444,10 @@ class HomePage {
                     addFolderToCustomFolders(folderName, adminAccess);
                     const customFolders = this.getCustomFoldersFromLocalStorage();
 
-                    customDBFiles = await this.fetchCustomCollectionFiles(),
-                        publicFolders = await this.fetchAllPublicFolders();
+                    [this.allCustomCollectionDBFiles, this.publicFolders] = await Promise.all([
+                        this.fetchCustomCollectionFiles(),
+                        this.fetchAllPublicFolders()
+                    ]);
 
                     await this.renderFileList();
 
@@ -499,7 +503,7 @@ class HomePage {
                     this.storeFilesinDB([newFile]);
                     this.addFolderToCustomFolders(folderName, adminAccess);
 
-                    [customDBFiles, publicFolders] = await Promise.all([
+                    [this.allCustomCollectionDBFiles, this.publicFolders] = await Promise.all([
                         this.fetchCustomCollectionFiles(),
                         this.fetchAllPublicFolders(),
                     ]);
@@ -541,17 +545,17 @@ class HomePage {
         this.singAlongPage = singAlongPage;
     }
 
-    async filterSongs(query: string) {
+    filterSongs(query: string) {
         const helperText = document.querySelector('#search-songs .helper') as HTMLElement;
         if (query === '') {
             this.renderFileList();
             helperText.textContent = '';
             return;
         }
-        let filteredFiles: FileData[] = globalDBFiles.filter(file =>
+        let filteredFiles: FileData[] = this.allDBFiles.filter(file =>
             file.fileName.toLowerCase().includes(query.toLowerCase())
         );
-        filteredFiles = filteredFiles.concat(customDBFiles.filter(file =>
+        filteredFiles = filteredFiles.concat(this.allCustomCollectionDBFiles.filter(file =>
             file.fileName.toLowerCase().includes(query.toLowerCase())
         ));
         helperText.textContent = `${filteredFiles.length} result${filteredFiles.length !== 1 ? 's' : ''} found`;
@@ -613,7 +617,7 @@ class HomePage {
         this.fileList.innerHTML = '';
         this.customCollectionsFileList.innerHTML = '';
 
-        if (customDBFiles.length > 0) {
+        if (this.allCustomCollectionDBFiles.length > 0) {
             this.customCollectionsContainer.style.display = 'block';
         } else {
             this.customCollectionsContainer.style.display = 'none';
@@ -752,7 +756,7 @@ class HomePage {
         fileItems.forEach(item => {
             const fileName = item.getAttribute('data-file-name');
             const icon = item.querySelector('i') as HTMLElement;
-            if (isSelectableMode) {
+            if (this.isSelectionMode) {
                 item.classList.add('selectable');
                 icon.textContent = 'check_box';
             } else {
@@ -911,10 +915,10 @@ class HomePage {
 
         try {
             if (this.customCollectionsDB) {
-                this.storeFilesinDB(files);
+                this.storeFilesinCustomDB(files);
             } else {
                 this.customCollectionsDB = await this.initCustomCollectionDB();
-                this.storeFilesinDB(files);
+                this.storeFilesinCustomDB(files);
             }
         } catch (error) {
             console.error("Error storing files in IndexedDB:", error);
@@ -923,6 +927,28 @@ class HomePage {
     }
 
     async storeFilesinDB(files: FileData[]) {
+        return new Promise((resolve, reject) => {
+            if (!this.DB){
+                showErrorSnackbar('Error storing files: DB not initialized.');
+                return;
+            }
+            const transaction = this.DB.transaction('files', 'readwrite');
+            const store = transaction.objectStore('files');
+
+            files.forEach(file => {
+                if (file.relativePath && file.fileName) {
+                    store.put(file);
+                } else {
+                    console.error('File data missing relativePath or fileName:', file);
+                }
+            });
+
+            transaction.oncomplete = () => resolve(true);
+            transaction.onerror = () => reject(transaction.error);
+        });
+    }
+
+    async storeFilesinCustomDB(files: FileData[]) {
         return new Promise((resolve, reject) => {
             if (!this.customCollectionsDB){
                 showErrorSnackbar('Error storing files: Custom Collections DB not initialized.');
@@ -1007,7 +1033,7 @@ class HomePage {
         });
 
         fileButton.addEventListener('click', (event) => {
-            if (isSelectableMode) {
+            if (this.isSelectionMode) {
                 event.preventDefault();
                 fileButton.classList.toggle('selected');
                 if (fileButton.classList.contains('selected')) {
@@ -1067,6 +1093,10 @@ class SongPage {
     nextParagraphButton: HTMLButtonElement;
     prevParagraphButton: HTMLButtonElement;
     toggleParagraphViewButton: HTMLInputElement;
+    touchStartX: number = 0;
+    touchEndX: number = 0;
+    isSwipe: boolean = false;
+    isAnimating: boolean = false;
 
     constructor(pageID: string, navBarID: string) {
         this.pageID = pageID;
@@ -1084,6 +1114,7 @@ class SongPage {
         this.prevParagraphButton = this.navBar.querySelector("#prev-paragraph") as HTMLButtonElement;
         this.toggleParagraphViewButton = this.navBar.querySelector("#toggle-paragraph-view") as HTMLInputElement;
 
+        this.addSwipeListeners();
         this.initialize();
     }
 
@@ -1105,6 +1136,43 @@ class SongPage {
         });
     }
 
+    addSwipeListeners() {
+        this.container.addEventListener('touchstart', (e: TouchEvent) => {
+            this.touchStartX = e.changedTouches[0].screenX;
+        });
+
+        this.container.addEventListener('touchend', (e: TouchEvent) => {
+            this.touchEndX = e.changedTouches[0].screenX;
+            this.handleSwipe();
+        });
+    }
+
+    handleSwipe() {
+        const swipeThreshold = 50; // Minimum swipe distance (in pixels)
+
+        this.isSwipe = true;
+
+        if (this.touchEndX < this.touchStartX - swipeThreshold) {
+            this.moveToNextSong();
+            setTimeout(() => {
+                if (this.songContainer.focusEnabled) {
+                    this.songContainer.currentParagraphIndex = 0;
+                    this.songContainer.focusParagraph();
+                }
+            }, 500);
+        } else if (this.touchEndX > this.touchStartX + swipeThreshold) {
+            this.moveToPreviousSong();
+            setTimeout(() => {
+                if (this.songContainer.focusEnabled) {
+                    this.songContainer.currentParagraphIndex = 0;
+                    this.songContainer.focusParagraph();
+                }
+            }, 500);
+        }
+
+        this.isSwipe = false;
+    }
+
     setReferences(singAlongPage: SingAlongPage, homePage: HomePage) {
         this.singAlongPage = singAlongPage;
         this.homePage = homePage;
@@ -1112,18 +1180,96 @@ class SongPage {
     }
 
     moveToPreviousSong() {
+        if (this.isAnimating) return;
+
+        if (this.homePage) {
+            this.flattendFileList = this.homePage.flattendFileList;
+        }
+
         if (this.currentSongIndex > 0) {
-            this.currentSongIndex--;
-            const previousSong = this.flattendFileList[this.currentSongIndex];
-            this.songContainer.displaySong(previousSong);
+            if (this.isSwipe) {
+                this.isAnimating = true;
+
+                this.songContainer.header.classList.add('slide-right');
+                this.songContainer.content.classList.add('slide-right');
+
+                setTimeout(() => {
+                    this.currentSongIndex--;
+                    const previousSong = this.flattendFileList[this.currentSongIndex];
+
+                    this.songContainer.header.classList.remove('slide-right');
+                    this.songContainer.content.classList.remove('slide-right');
+
+                    this.songContainer.displaySong(previousSong);
+
+                    this.songContainer.header.classList.add('slide-in-right');
+                    this.songContainer.content.classList.add('slide-in-right');
+
+                    setTimeout(() => {
+                        this.songContainer.header.classList.remove('slide-in-right');
+                        this.songContainer.content.classList.remove('slide-in-right');
+
+                        this.isAnimating = false;
+                    }, 500);
+
+                }, 500);
+            } else {
+                this.currentSongIndex--;
+                const previousSong = this.flattendFileList[this.currentSongIndex];
+                this.songContainer.displaySong(previousSong);
+            }
+        }
+
+        if (this.songContainer.focusEnabled) {
+            this.songContainer.currentParagraphIndex = 0;
+            this.songContainer.focusParagraph();
         }
     }
 
     moveToNextSong() {
+        if (this.isAnimating) return;
+
+        if (this.homePage) {
+            this.flattendFileList = this.homePage.flattendFileList;
+        }
+
         if (this.currentSongIndex < this.flattendFileList.length - 1) {
-            this.currentSongIndex++;
-            const nextSong = this.flattendFileList[this.currentSongIndex];
-            this.songContainer.displaySong(nextSong);
+            if (this.isSwipe) {
+                this.isAnimating = true;
+
+                this.songContainer.header.classList.add('slide-left');
+                this.songContainer.content.classList.add('slide-left');
+
+                setTimeout(() => {
+                    this.currentSongIndex++;
+                    const nextSong = this.flattendFileList[this.currentSongIndex];
+
+                    this.songContainer.header.classList.remove('slide-left');
+                    this.songContainer.content.classList.remove('slide-left');
+
+                    this.songContainer.displaySong(nextSong);
+
+                    this.songContainer.header.classList.add('slide-in-left');
+                    this.songContainer.content.classList.add('slide-in-left');
+
+                    setTimeout(() => {
+                        this.songContainer.header.classList.remove('slide-in-left');
+                        this.songContainer.content.classList.remove('slide-in-left');
+
+                        this.isAnimating = false;
+                    }, 500);
+
+                }, 500);
+            } else {
+                this.currentSongIndex++;
+                const nextSong = this.flattendFileList[this.currentSongIndex];
+                this.songContainer.displaySong(nextSong);
+            }
+        }
+
+        if (this.songContainer.focusEnabled) {
+            this.songContainer.currentParagraphIndex = 0;
+            this.songContainer.focusParagraph();
         }
     }
 
@@ -1132,15 +1278,20 @@ class SongPage {
     }
 
     displaySong(file: FileData) {
+        if (this.homePage){
+            this.flattendFileList = this.homePage.flattendFileList;
+        }
         ui('#song');
         window.scrollTo({ top: 0, behavior: 'instant' });
         this.currentSongIndex = this.flattendFileList.findIndex(song => song === file);
         this.songContainer.displaySong(file);
         this.navBar.style.display = "block";
     }
+
     showNav(){
         this.navBar.style.display = "block";
     }
+
     hideNav(){
         this.navBar.style.display = "none";
     }
@@ -1525,7 +1676,7 @@ function removeFolderFromCustomFolders(folderName: string) {
     }
 }
 
-async function cleanUpCustomDB(selectedFolders: string[]) {
+function cleanUpCustomDB(selectedFolders: string[]) {
     const customCollectionsDB = homePage.customCollectionsDB;
     if (!customCollectionsDB) {
         return;
@@ -1688,8 +1839,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (targetPageId === '#home') {
-                homePage.hideNav();
-                songPage.showNav();
+                homePage.showNav();
+                songPage.hideNav();
                 singAlongPage.hideNav();
             } else if (targetPageId === '#song') {
                 if (songPage.songContainer.focusEnabled) {
@@ -1736,11 +1887,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.querySelector('#nav-bar-close')?.addEventListener('click', () => {
         ui('#nav-bar');
     });
-    document.querySelector('#close-collections-dialog-close')?.addEventListener('click', () => {
+    document.querySelector('#custom-collections-dialog-close')?.addEventListener('click', () => {
         ui('#custom-collections-dialog');
     });
     document.querySelector('#toggle-collections')?.addEventListener('click', async () => {
         customFolderList.innerHTML = '';
+        publicFolders = await homePage.fetchAllPublicFolders();
         const folders = homePage.getCustomFoldersFromLocalStorage();
         const folderNames = folders.map(folder => folder.folderName);
 
@@ -1787,15 +1939,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         ui('#custom-collections-dialog');
     });
-    document.querySelector('#close-collections-dialog-apply')?.addEventListener('click', async () => {
+    document.querySelector('#custom-collections-dialog-apply')?.addEventListener('click', async () => {
         showSuccessSnackbar('Loading...');
 
-        const customFolders = getCustomFoldersFromLocalStorage();
+        const customFolders = homePage.getCustomFoldersFromLocalStorage();
         const selectedFolders = customFolders.map(folder => folder.folderName);
 
         cleanUpCustomDB(selectedFolders);
-        customDBFiles = await homePage.fetchCustomCollectionFiles();
-        await homePage.renderFileList();
+
+        const customCollectionDBFiles = await homePage.fetchCustomCollectionFiles();
+
+        homePage.allCustomCollectionDBFiles = customCollectionDBFiles;
+
+        homePage.renderFileList();
 
         showSuccessSnackbar('Collections updated successfully.');
     });
@@ -1819,7 +1975,7 @@ async function checkForUpdates(registration: ServiceWorkerRegistration) {
     const data = await response.json();
     const VERSION: string = data.version;
 
-    const currentVersion = localStorage.getItem('latestVersion');
+    const currentVersion = localStorage.getItem('latestVersion') || "1.0.0";
 
     if (currentVersion !== VERSION) {
         navigator.serviceWorker.addEventListener('message', event => {
@@ -1865,7 +2021,7 @@ async function load() {
                 console.log('ServiceWorker registration successful with scope: /');
 
                 if (navigator.onLine) {
-                    checkForUpdates(registration);
+                    await checkForUpdates(registration);
                 } else {
                     console.log('Offline: Skipping version check');
                 }
