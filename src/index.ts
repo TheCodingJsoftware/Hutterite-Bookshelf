@@ -1794,7 +1794,7 @@ function toggleTheme() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const VERSION = localStorage.getItem('latestVersion') || '1.0.1';
+    const VERSION = localStorage.getItem('latestVersion') || '1.0.0';
     const appNameVersion = document.getElementById('app-name-version') as HTMLHeadingElement;
     appNameVersion.textContent = `Hutterite Bookshelf v${VERSION}`;
 

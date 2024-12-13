@@ -19,7 +19,7 @@
   },
   "name": "hutterite-bookshelf",
   "description": "Your own personal bookshelf.",
-  "version": "1.0.0",
+  "version": "0.0.5",
   "main": "webpack.config.js",
   "scripts": {
     "run": "python main.py",
