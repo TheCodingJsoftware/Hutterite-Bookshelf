@@ -1384,7 +1384,7 @@ class SingAlongPage {
                             this.joinSingAlong(singAlong.name, isHost);
                             this.openCreateSingAlongDialogButton.style.display = 'none';
                             this.openJoinSingAlongDialogButton.style.display = 'none';
-                            this.leaveSingAlongButton.style.display = 'inline-flex';
+                            this.leaveSingAlongButton.style.display = 'block';
                             this.endSingAlongButton.style.display = 'none';
                             ui('#join-sing-along-dialog');
                         });
@@ -1479,7 +1479,7 @@ class SingAlongPage {
                     this.openCreateSingAlongDialogButton.style.display = 'none';
                     this.openJoinSingAlongDialogButton.style.display = 'none';
                     this.leaveSingAlongButton.style.display = 'none';
-                    this.endSingAlongButton.style.display = 'inline-flex';
+                    this.endSingAlongButton.style.display = 'block';
                 }
             });
         } else {
@@ -1496,7 +1496,7 @@ class SingAlongPage {
                 this.openCreateSingAlongDialogButton.style.display = 'none';
                 this.openJoinSingAlongDialogButton.style.display = 'none';
                 this.leaveSingAlongButton.style.display = 'none';
-                this.endSingAlongButton.style.display = 'inline-flex';
+                this.endSingAlongButton.style.display = 'block';
             }
         }
     }
@@ -1513,7 +1513,7 @@ class SingAlongPage {
                     this.socket.send(JSON.stringify(data));
                     this.openCreateSingAlongDialogButton.style.display = 'none';
                     this.openJoinSingAlongDialogButton.style.display = 'none';
-                    this.leaveSingAlongButton.style.display = 'inline-flex';
+                    this.leaveSingAlongButton.style.display = 'block';
                     this.endSingAlongButton.style.display = 'none';
                 }
             });
@@ -1527,7 +1527,7 @@ class SingAlongPage {
                 this.socket.send(JSON.stringify(data));
                 this.openCreateSingAlongDialogButton.style.display = 'none';
                 this.openJoinSingAlongDialogButton.style.display = 'none';
-                this.leaveSingAlongButton.style.display = 'inline-flex';
+                this.leaveSingAlongButton.style.display = 'block';
                 this.endSingAlongButton.style.display = 'none';
             }
         }
@@ -1577,8 +1577,8 @@ class SingAlongPage {
         localStorage.removeItem('is_host');
         showSuccessSnackbar('Left Sing-Along.');
 
-        this.openCreateSingAlongDialogButton.style.display = 'inline-flex';
-        this.openJoinSingAlongDialogButton.style.display = 'inline-flex';
+        this.openCreateSingAlongDialogButton.style.display = 'block';
+        this.openJoinSingAlongDialogButton.style.display = 'block';
         this.leaveSingAlongButton.style.display = 'none';
         this.endSingAlongButton.style.display = 'none';
     }
@@ -1596,8 +1596,8 @@ class SingAlongPage {
         localStorage.removeItem('is_host');
 
         showSuccessSnackbar('Sing-Along ended.');
-        this.openCreateSingAlongDialogButton.style.display = 'inline-flex';
-        this.openJoinSingAlongDialogButton.style.display = 'inline-flex';
+        this.openCreateSingAlongDialogButton.style.display = 'block';
+        this.openJoinSingAlongDialogButton.style.display = 'block';
         this.leaveSingAlongButton.style.display = 'none';
         this.endSingAlongButton.style.display = 'none';
     }

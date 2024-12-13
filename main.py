@@ -21,7 +21,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
-loader = jinja2.FileSystemLoader("dist")
+loader = jinja2.FileSystemLoader("dist/html")
 env = jinja2.Environment(loader=loader)
 
 sing_alongs: dict[str, "SingAlong"] = {}
@@ -89,6 +89,15 @@ class MainHandler(tornado.web.RequestHandler):
     def get(self):
         template = env.get_template("index.html")
         rendered_template = template.render()
+        self.write(rendered_template)
+
+
+class BaptismBookletHandler(tornado.web.RequestHandler):
+    def get(self):
+        template = env.get_template("baptism_booklet.html")
+        with open("static/baptism_booklet_data.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+        rendered_template = template.render(baptism_booklet_data=data)
         self.write(rendered_template)
 
 
@@ -361,6 +370,7 @@ def make_app():
     return tornado.web.Application(
         [
             (r"/", MainHandler),
+            (r"/baptism_booklet", BaptismBookletHandler),
             (r"/privacy_policy", PrivacyPolicyHandler),
             (r"/serviceWorker.js", ServiceWorkerHandler),
             (r"/dist/(.*)", tornado.web.StaticFileHandler, {"path": "dist"}),

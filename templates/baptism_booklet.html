@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <link rel="icon" href="/static/icons/favicon.png"/>
+    <link rel="manifest" href="/static/manifest.json"/>
+    <link rel="manifest" href="/static/app.webmanifest"/>
+    <meta name="description" content="A comprehensive app for accessing, managing, and sharing Hutterite literature."/>
+    <title>Hutterite Bookshelf</title>
+  </head>
+
+  <header class="fixed no-padding">
+    <nav class="primary left-padding right-padding">
+      <button class="circle transparent" id="nav-bar-open">
+        <img class="responsive" fetchpriority="low" loading="lazy" src="/static/icons/favicon.png" alt="" width="32" height="32"/>
+      </button>
+      <h5 class="max center-align small">Baptism Booklet</h5>
+    </nav>
+  </header>
+
+  <body>
+    <main class="responsive">
+      <article>
+        <h3>Settings</h3>
+        <hr>
+        <br>
+        <!-- Language Switch -->
+        <label class="checkbox">
+          <input type="checkbox" id="always-open-checkbox"/>
+          <span>Open All Questions</span>
+        </label>
+        <br>
+        <div class="field middle-align medium-width">
+          <nav>
+            <div class="max">
+              <h6>Translate</h6>
+              <div>Translate All Questions from German to English</div>
+            </div>
+            <label class="switch icon">
+              <input type="checkbox" class="translate-checkbox" data-question="{{question_number}}" autocomplete="off" id="language-switch-checkbox"/>
+              <span>
+                <i>translate</i>
+              </span>
+            </label>
+          </nav>
+        </div>
+      </article>
+      <div class="grid no-space" style="align-items: center;">
+        {% for question_number, question_data in baptism_booklet_data["questions_and_answers"].items() %}
+          <details class="small-margin small-round s12 m6 l6">
+            <summary class="small-padding fill row">
+              <!-- German Question -->
+              <span class="german max" id="german-question-{{question_number}}" style="display: block">
+                {{question_number}}.
+                {{question_data["german"]["question"]}}
+                <button class="primary small-round circle none badge" onclick="playaudio('german/q{{question_number}}', this)">
+                  <i>play_arrow</i>
+                </button>
+              </span>
+              <!-- English Question -->
+              <span class="english max" id="english-question-{{question_number}}" style="display: none">
+                {{question_number}}.
+                {{question_data["english"]["question"]}}
+                <button class="primary small-round circle none badge" onclick="playaudio('english/q{{question_number}}', this)">
+                  <i>play_arrow</i>
+                </button>
+              </span>
+              <label class="switch icon">
+                <input type="checkbox" class="translate-checkbox" data-question="{{question_number}}" autocomplete="off"/>
+                <span>
+                  <i>translate</i>
+                </span>
+              </label>
+            </summary>
+
+            <!-- Answers -->
+            <pre class="german no-margin no-line" id="german-answer-{{question_number}}" style="display: block">{{question_data["german"]["answer"]}}<button class="primary small-round circle none badge" onclick="playaudio('german/a{{question_number}}', this)"><i>play_arrow</i></button></pre>
+            <pre class="english no-margin no-line" id="english-answer-{{question_number}}" style="display: none">{{question_data["english"]["answer"]}}<button class="primary small-round circle none badge" onclick="playaudio('english/a{{question_number}}', this)"><i>play_arrow</i></button></pre>
+
+            <!-- References -->
+            <div class="german right-align" id="german-reference-{{question_number}}" style="display: block">
+              {% for reference in question_data["german"]["references"] %}
+                <a class="none badge small-round tiny-padding transparent wave">{{reference}}</a>
+              {% endfor %}
+            </div>
+            <div class="english right-align" id="english-reference-{{question_number}}" style="display: none">
+              {% for reference in question_data["english"]["references"] %}
+                <a class="none badge small-round tiny-padding transparent wave">{{reference}}</a>
+              {% endfor %}
+            </div>
+          </details>
+        {% endfor %}
+      </div>
+    </main>
+
+    <script>
+      function playaudio(filename, button) {
+        // Check if the button has an associated audio instance
+        if (button.audio) {
+          // If audio is playing, stop and reset it
+          button
+            .audio
+            .pause();
+          button.audio.currentTime = 0; // Reset to the beginning
+          button
+            .audioCtx
+            .close(); // Close the AudioContext to clean up
+          button.audio = null; // Clear the audio reference
+          button.audioCtx = null; // Clear the AudioContext reference
+          button.innerHTML = '<i>play_arrow</i>'; // Change button back to play
+          return;
+        }
+
+        // Create new audio and AudioContext instances
+        const audio = new Audio(`/static/audio/${filename}.mp3`);
+        const audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+        const gainNode = audioCtx.createGain();
+
+        // Associate the audio and AudioContext instances with the button
+        button.audio = audio;
+        button.audioCtx = audioCtx;
+
+        // Update the button to show "stop"
+        button.innerHTML = '<i>stop</i>';
+
+        // Gain configuration for volume control
+        audio.addEventListener('canplaythrough', () => {
+          // Create a new MediaElementSourceNode for the audio element
+          const source = audioCtx.createMediaElementSource(audio);
+          source.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+
+          // Set the gain value (adjustable volume)
+          gainNode.gain.value = 20; // Set desired volume level
+          audio.play();
+        });
+
+        // Reset button state when audio ends
+        audio.addEventListener('ended', () => {
+          button
+            .audio
+            .pause();
+          button.audio.currentTime = 0;
+          button
+            .audioCtx
+            .close();
+          button.audio = null;
+          button.audioCtx = null;
+          button.innerHTML = '<i>play_arrow</i>'; // Change button back to play
+        });
+
+        // Error handling for audio loading issues
+        audio.addEventListener('error', () => {
+          console.error(`Error playing audio file: ${filename}`);
+          button
+            .audio
+            .pause();
+          button.audio.currentTime = 0;
+          button
+            .audioCtx
+            .close();
+          button.audio = null;
+          button.audioCtx = null;
+          button.innerHTML = '<i>play_arrow</i>'; // Reset button to play
+        });
+      }
+      document.addEventListener("DOMContentLoaded", () => {
+        const languageSwitchCheckbox = document.getElementById("language-switch-checkbox");
+        const alwaysOpenCheckbox = document.getElementById("always-open-checkbox");
+        const translateCheckboxes = document.querySelectorAll(".translate-checkbox");
+
+        // Toggle language globally
+        languageSwitchCheckbox.addEventListener("change", (e) => {
+          const isGerman = e.target.checked;
+          const germanElements = document.querySelectorAll(".german");
+          const englishElements = document.querySelectorAll(".english");
+
+          germanElements.forEach(
+            (el) => el.style.display = !isGerman
+            ? "block"
+            : "none");
+          englishElements.forEach(
+            (el) => el.style.display = !isGerman
+            ? "none"
+            : "block");
+          translateCheckboxes.forEach((checkbox) => {
+            checkbox.checked = isGerman; // Set to English if not German
+          });
+        });
+
+        // Toggle translation for individual questions
+        translateCheckboxes.forEach((checkbox) => {
+          checkbox.addEventListener("change", (e) => {
+            const questionId = e.target.dataset.question;
+            const isGerman = !e.target.checked;
+
+            document
+              .getElementById(`german-question-${questionId}`)
+              .style
+              .display = isGerman
+                ? "block"
+                : "none";
+            document
+              .getElementById(`english-question-${questionId}`)
+              .style
+              .display = isGerman
+                ? "none"
+                : "block";
+            document
+              .getElementById(`german-answer-${questionId}`)
+              .style
+              .display = isGerman
+                ? "block"
+                : "none";
+            document
+              .getElementById(`english-answer-${questionId}`)
+              .style
+              .display = isGerman
+                ? "none"
+                : "block";
+            document
+              .getElementById(`german-reference-${questionId}`)
+              .style
+              .display = isGerman
+                ? "block"
+                : "none";
+            document
+              .getElementById(`english-reference-${questionId}`)
+              .style
+              .display = isGerman
+                ? "none"
+                : "block";
+          });
+        });
+
+        // Always open questions functionality
+        alwaysOpenCheckbox.addEventListener("change", (e) => {
+          const open = e.target.checked;
+          document
+            .querySelectorAll("details")
+            .forEach((detail) => {
+              detail.open = open;
+            });
+        });
+      });
+    </script>
+  </body>
+
+</html>

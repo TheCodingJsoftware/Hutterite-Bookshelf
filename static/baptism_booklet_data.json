@@ -1,0 +1,827 @@
+{
+    "request": {
+        "german": {
+            "title": "Verlangen der Tauflinge an die Vorsteher der Gemeinde",
+            "content": "Lieber Bruder, wir haben ein herzliches Verlangen mit Gott und allen Frommen einen Bund zu schliesen. Wir wollen dich bitten, du wollest uns behilflich sein, mit der Hilfe und dem Beistand Gottes."
+        },
+        "english": {
+            "title": "A request by the baptismal candidates to the elders of the community",
+            "content": "Dear brother, we have a sincere desire to make a covenant with God and his church. We ask you to assist us in this, with the help and guidance of God."
+        }
+    },
+    "questions_and_answers": {
+        "1": {
+            "german": {
+                "question": "Was hast du für einen Glauben, und wie lässt du dich nennen?",
+                "answer": "Ich bin ein Christ.",
+                "references": [
+                    "Röm. 10,10"
+                ]
+            },
+            "english": {
+                "question": "What faith do you profess and what do you call yourself?",
+                "answer": "I am a Christian.",
+                "references": [
+                    "Rom. 10:10"
+                ]
+            }
+        },
+        "2": {
+            "german": {
+                "question": "Warum bist du ein Christ?",
+                "answer": "Weil ich glaube an Jesum Christum, welcher mein Herr und Gott ist; und mein Heiland, Erlöser und Seligmacher geworden ist.",
+                "references": [
+                    "Matt. 1, 21",
+                    "Apg. 4,12"
+                ]
+            },
+            "english": {
+                "question": "Why are you a Christian?",
+                "answer": "Because I believe in Jesus Christ, my Lord and my God. He has become my Savior, Deliverer and Redeemer.",
+                "references": [
+                    "Mt. 1:21",
+                    "Acts 4:12"
+                ]
+            }
+        },
+        "3": {
+            "german": {
+                "question": "Was stehet einem Christen zu zu tun?",
+                "answer": "Dass sie Gott unseren Schöpfer und unseren Heiland und Seligmacher Jesum Christum aus seinem offenbarten Wort soll recht erkennen lernen, ihn recht nennen, lieben, an ihn glauben, und ihm vertrauen. Ihm auch dienen, ihn loben und preisen.",
+                "references": [
+                    "Eph. 4, 1-6",
+                    "1 Kor. 12,4-11",
+                    "1 Joh. 3"
+                ]
+            },
+            "english": {
+                "question": "What is the duty of a Christian?",
+                "answer": "To truly know God as Creator, and Jesus Christ as Saviour and Redeemer, through the revelaed Word of God. A Christian must learn how to earnestly call upon God, to beleive, love and trust him, and also to serve, glorify, and praise him.",
+                "references": [
+                    "Eph. 4:1-6",
+                    "1 Cor. 12:5-11",
+                    "1 Joh. 3"
+                ]
+            }
+        },
+        "4": {
+            "german": {
+                "question": "Wie wird Gott Genannt?",
+                "answer": "Gott der Vater, Gott der Sohn, und Gott der Heilige Geist.",
+                "references": [
+                    "Matt. 28,19"
+                ]
+            },
+            "english": {
+                "question": "What is God's name?",
+                "answer": "God the Father, God the Son, and God the Holy Spirit.",
+                "references": [
+                    "Mt. 28:19"
+                ]
+            }
+        },
+        "5": {
+            "german": {
+                "question": "Wer hat dich erschaffen?",
+                "answer": "Der ewige, einige, selbstbestehende Gott, der große, allein mächtige Schöpfer des Himmels und der Erde, der König aller Könige und Herr aller Herren, der die Unsterblichkeit hat. Er wohnt in Licht, zu dem niemand kommen kann, welches kein Mensch gesehen hat oder sehen kann. Dem sei Ehre und ewiges Reich, amen!",
+                "references": [
+                    "1 Tim. 6,16"
+                ]
+            },
+            "english": {
+                "question": "Who created you?",
+                "answer": "The one, eternal and uncreated God, the great creator of heaven and earth who is omnipotent and immortal, the King of kings and Lord of lords. He dwells in an unapproachable light, which no one has seen nor can see. To him be glory and dominion forever, amen!",
+                "references": [
+                    "1 Tim. 6:16"
+                ]
+            }
+        },
+        "6": {
+            "german": {
+                "question": "Wozu hat dich Gott erschaffen?",
+                "answer": "Dass ich in recht erkennen möchte, und ihn auch loben und preisen. Gott will, dass ich in die Gnade des Herren Jesus Chrstus, für die Liebe Gottes und in der Gemeinschaft des Heilgen Geistes leben soll.",
+                "references": [
+                    "1 Mos. 1,27"
+                ]
+            },
+            "english": {
+                "question": "For what purpose did God create you?",
+                "answer": "So that I may truly acknowledge, praise and glorify him. God wills that I should live by the grace of the Lord Jesus Christ, for the love of God, and in the fellowship of the Holy Spirit.",
+                "references": [
+                    "Gen. 1:27"
+                ]
+            }
+        },
+        "7": {
+            "german": {
+                "question": "Wonach hat dich Gott erschaffen?",
+                "answer": "Nach seinem Bild.",
+                "references": [
+                    "3 Mos. 11,14",
+                    "1 Pet. 1,16"
+                ]
+            },
+            "english": {
+                "question": "In whose likeness did God create you?",
+                "answer": "In his own image.",
+                "references": [
+                    "Num. 14:14",
+                    "1 Pet. 1:6"
+                ]
+            }
+        },
+        "8": {
+            "german": {
+                "question": "Was ist Gottes Bild?",
+                "answer": "Gottes Gerechtigkeit, Heiligkeit und Unsterblichkeit.",
+                "references": [
+                    "1 Mos. 3,6"
+                ]
+            },
+            "english": {
+                "question": "What is the image of God?",
+                "answer": "God's justice, holiness, and immortality.",
+                "references": [
+                    "Gen. 3:6"
+                ]
+            }
+        },
+        "9": {
+            "german": {
+                "question": "Woher kommt es, dass du ein sündiger Mensch bist?",
+                "answer": "Vom Teufel sein Betrügerei und des Menschen Ungehorsam.",
+                "references": [
+                    "Mose 3,1-6"
+                ]
+            },
+            "english": {
+                "question": "How is it that you are a sinful person?",
+                "answer": "It is the result of Satan's deception and humanity's disobedience.",
+                "references": [
+                    "Gen. 3:1-6"
+                ]
+            }
+        },
+        "10": {
+            "german": {
+                "question": "Was ist Sunde?",
+                "answer": "Sünde ist alles, was wider den Willen und Befehl Gottes ist, es sei äußerlich oder innerlich.",
+                "references": [
+                    "1 Joh 3.4; 5,17"
+                ]
+            },
+            "english": {
+                "question": "What is sin?",
+                "answer": "Sin is anything that is contrary to the will and command of God, whether outwardly or inwardly.",
+                "references": [
+                    "1 Jn. 3:4: 5:17"
+                ]
+            }
+        },
+        "11": {
+            "german": {
+                "question": "Was verdienen wir mit der Sünde?",
+                "answer": "Trennung von Gott, seinen Zorn, alle Plagen und die Verdammnis.",
+                "references": [
+                    "Eph 4.18",
+                    "Jes 59,2",
+                    "1 Kor 6,9-10",
+                    "Röm 2,5"
+                ]
+            },
+            "english": {
+                "question": "What are the consequences of sin?",
+                "answer": "Alienation from God, his wrath, deep affliction, and damnation.",
+                "references": [
+                    "Eph. 4:18",
+                    "Isa. 59:2",
+                    "1 Cor. 6:9-10",
+                    "Rom. 2:5"
+                ]
+            }
+        },
+        "12": {
+            "german": {
+                "question": "Wer erlöst dich von der Sünde, vom Tod und von der Verdammnis?",
+                "answer": "Gott der Sohn.",
+                "references": [
+                    "Röm 8,32"
+                ]
+            },
+            "english": {
+                "question": "Who saves you from sin, death, and damnation?",
+                "answer": "God the Son.",
+                "references": [
+                    "Rom. 8:32"
+                ]
+            }
+        },
+        "13": {
+            "german": {
+                "question": "Wie heißt Gott der Sohn?",
+                "answer": "Jesus Christus.",
+                "references": [
+                    "Mt. 1,21",
+                    "Luk. 2,21"
+                ]
+            },
+            "english": {
+                "question": "What is the name of God the Son?",
+                "answer": "Jesus Christ.",
+                "references": [
+                    "Mt. 1:21",
+                    "Lk. 2:21"
+                ]
+            }
+        },
+        "14": {
+            "german": {
+                "question": "Warum heißt er Jesus?",
+                "answer": "Weil er unser Heiland, Erlöser und Helfer ist.",
+                "references": [
+                    "Mt. 1,21"
+                ]
+            },
+            "english": {
+                "question": "Why is He called Jesus?",
+                "answer": "Because he is our Savior, Redeemer, and Advocate.",
+                "references": [
+                    "Mt. 1:21"
+                ]
+            }
+        },
+        "15": {
+            "german": {
+                "question": "Warum heißt er Christus?",
+                "answer": "Weil er unser gesalbter König und Hohepriester ist.",
+                "references": [
+                    "Apg 10,37-38",
+                    "Lk 1,33; 4,17-19",
+                    "Hebr 1,8-12; 2,17"
+                ]
+            },
+            "english": {
+                "question": "Why is He called Christ?",
+                "answer": "Because he is our anointed King and High Priest.",
+                "references": [
+                    "Acts 10:37-38",
+                    "Lk. 4:17-19; 1:33",
+                    "Heb. 1:8-12; 2:17"
+                ]
+            }
+        },
+        "16": {
+            "german": {
+                "question": "Wer ist der Herr Jesus Christus?",
+                "answer": "Er ist wahrer Gott und wahrer Mensch.",
+                "references": [
+                    "Röm. 1,3-4"
+                ]
+            },
+            "english": {
+                "question": "Who is the Lord Jesus Christ?",
+                "answer": "He is truly God and truly human.",
+                "references": [
+                    "Rom. 1:3-4"
+                ]
+            }
+        },
+        "17": {
+            "german": {
+                "question": "Von wem hat der Herr Christus seine Gottheit?",
+                "answer": "Von Gott, seinem himmlischen Vater, denn er war bei demselbigen vom Anfang der Zeit und von Ewigkeit her.",
+                "references": [
+                    "Hebr. 1,2",
+                    "Joh 1,1-4"
+                ]
+            },
+            "english": {
+                "question": "From whom did Christ receive his divinity?",
+                "answer": "From God, his heavenly Father, for he was with God from the beginning of time and through all eternity.",
+                "references": [
+                    "Heb. 1:2",
+                    "Jn. 1:1-4"
+                ]
+            }
+        },
+        "18": {
+            "german": {
+                "question": "Von wem hat der Herr Christus seine Menschheit?",
+                "answer": "Von der Jungfrau Maria, als sie ihn im Glauben empfangen und in die Welt geboren hat. Jesus war in allen Dingen seinen Brüdern gleich, nur der Sünde ausgenommen.",
+                "references": [
+                    "Lk 1,35; 2,6-7",
+                    "Heb 2,14-17"
+                ]
+            },
+            "english": {
+                "question": "From whom did the Lord Jesus Christ receive his humanity?",
+                "answer": "From the virgin Mary when she conceived him in faith and brought him into the world. Jesus was like his brothers in all things, except he was sinless.",
+                "references": [
+                    "Lk. 1:35; 2:6-7",
+                    "Heb. 2:14-17"
+                ]
+            }
+        },
+        "19": {
+            "german": {
+                "question": "Womit hat dich der Herr Christus befreit?",
+                "answer": "Mit seinem heiligen, teuren Blut und unschuldigem Leiden und Sterben.",
+                "references": [
+                    "Apg 20,28",
+                    "1 Petr 1,18-19",
+                    "Eph 1,7"
+                ]
+            },
+            "english": {
+                "question": "With what means has Christ the Lord freed you?",
+                "answer": "With his innocent suffering and death and through the shedding of his precious, holy blood.",
+                "references": [
+                    "Acts 20:28",
+                    "1 Pet. 1:18-19",
+                    "Eph. 1:7"
+                ]
+            }
+        },
+        "20": {
+            "german": {
+                "question": "Wovon hat er dich erlöst?",
+                "answer": "Von der Gewalt der Sünden, der Verdammnis und dem ewigen Tod.",
+                "references": [
+                    "Rom 8.3-4",
+                    "2 Tim 1,10"
+                ]
+            },
+            "english": {
+                "question": "From what has he saved you?",
+                "answer": "From the tyranny of sin, damnation, and eternal death.",
+                "references": [
+                    "Rom. 8:3-4",
+                    "2 Tim. 1:10"
+                ]
+            }
+        },
+        "21": {
+            "german": {
+                "question": "Was hat Christus erworben mit seiner Erlösung, oder durch das Opfer seines Leibes?",
+                "answer": "Vergebung der Sünden, Gerechtigkeit, den Heiligen Geist und das ewige Leben.",
+                "references": [
+                    "1 Joh 1,7"
+                ]
+            },
+            "english": {
+                "question": "What has Christ accomplished with his redemption, or the sacrifice of his body?",
+                "answer": "Forgiveness of sins, righteousness, the Holy Spirit, and life eternal.",
+                "references": [
+                    "1 Jn. 1:7"
+                ]
+            }
+        },
+        "22": {
+            "german": {
+                "question": "Wo ist der Herr Jesus Christus nach seinem Leiden, Sterben und seiner Auferstehung hingekommen?",
+                "answer": "In den Himmel, und da hat er sich zur Rechten des Vaters gesetzt.",
+                "references": [
+                    "Mk 16,19",
+                    "Lk 22,69"
+                ]
+            },
+            "english": {
+                "question": "Where did the Lord Jesus Christ go after his suffering, death, and resurrection?",
+                "answer": "He ascended into heaven, where he took his place at the right hand of the Father.",
+                "references": [
+                    "Mk. 16:19",
+                    "Lk. 22:69"
+                ]
+            }
+        },
+        "23": {
+            "german": {
+                "question": "Ist seine Gegenwärtigkeit und sein,bei uns sein' hier auf Erden mun ganz entnommen?",
+                "answer": "Nein, denn er sagt im Evangelium: 'Siehe, ich bin bei euch alle Tage bis ans Ende der Welt,' und wo zwei oder drei versammelt sind in meinem Namen, da bin ich mitten unter ihnen.",
+                "references": [
+                    "Mt 18,20"
+                ]
+            },
+            "english": {
+                "question": "Does this mean that he has completely withdrawn his presence from us here on earth?",
+                "answer": "No, for he says in the Gospel, 'Remember, I am with you always until the end of the world,' and 'where two or three are gathered in my name, I am there with them.'",
+                "references": [
+                    "Mt. 28:20",
+                    "18:20"
+                ]
+            }
+        },
+        "24": {
+            "german": {
+                "question": "Denkt der Herr Christus auch im Himmel an uns?",
+                "answer": "Ja, er ist zur rechten Hand Gottes und vertritt uns.",
+                "references": [
+                    "Apg 2,33",
+                    "1 Tim 2,5"
+                ]
+            },
+            "english": {
+                "question": "Does Christ the Lord remember us, even in heaven?",
+                "answer": "Yes, he is at the right hand of God and intercedes for us.",
+                "references": [
+                    "Acts 2:33",
+                    "1 Tim. 2:5"
+                ]
+            }
+        },
+        "25": {
+            "german": {
+                "question": "Wenn sich Christus zur rechten Hand des Vaters im Himmel gesetzt hat, wie kann er dann zu uns kommen?",
+                "answer": "Durch seine göttliche Kraft und durch seinen Geist. 'Denn ich werde meinen Geist ausgießen über alles Fleisch,' verheißt Gott, und Christus verheißt auch, dass der Vater den Tröster, den Heiligen Geist senden werde.",
+                "references": [
+                    "Joel 3,1; 2:28-29",
+                    "Joh 14,26",
+                    "Apg 2,17"
+                ]
+            },
+            "english": {
+                "question": "Since Christ sits at the right hand of the Father, how can he be here with us?",
+                "answer": "Through his divine power and through his Spirit. 'For I will pour out my spirit over all flesh,' is God's promise, and Christ also promises that the Father will send a comforter, the Holy Spirit.",
+                "references": [
+                    "Joel 3:1",
+                    "Jn. 14:26",
+                    "Acts 2:17"
+                ]
+            }
+        },
+        "26": {
+            "german": {
+                "question": "Was ist der Heilige Geist?",
+                "answer": "Eine göttliche Kraft; ein ewiges, unbegreifliches und unsichtbares Wesen, welches mit dem Vater und Sohn von Anfang und von Ewigkeit her eins gewesen ist und auch in Ewigkeit eins bleiben wird. Dieser Heilige Geist hat vor Zeiten durch die heiligen Propheten geredet. In diesen letzten Zeiten geht er aus vom Vater und Sohn nach der Verheißung und Fürbitte Christi. Er lehrt, erleuchtet, tröstet, stärkt und heiligt diejenigen, die zum Leben vorgesehen sind.",
+                "references": [
+                    "Joh 1,1; 15,26; 16,13",
+                    "Eph 1,11-12",
+                    "Röm 8,29-30"
+                ]
+            },
+            "english": {
+                "question": "What is the Holy Spirit?",
+                "answer": "A divine power; an eternal, intangible, and invisible being, who has been one with the Father and the Son from the beginning and from eternity, and will remain united with them forever. The Holy Spirit spoke through the holy prophets in ages past. In these latter times, the Spirit proceeds from the Father and the Son according to the promise and petition of Christ. He teaches, enlightens, comforts, strengthens, and sanctifies those who are destined for life in the age to come.",
+                "references": [
+                    "Jn. 1:1; 15:26; 16:13",
+                    "Eph. 1:11-12",
+                    "Rom. 8:29-30"
+                ]
+            }
+        },
+        "27": {
+            "german": {
+                "question": "Wodurch wird man des Heiligen Geistes und seiner Wirkung teilhaftig?",
+                "answer": "Durch den Glauben und durch den göttlichen Gehorsam.",
+                "references": [
+                    "Rom 1.5-6",
+                    "Hebr 11.6"
+                ]
+            },
+            "english": {
+                "question": "How does one participate in the Holy Spirit and its power?",
+                "answer": "Through faith and the practice of godly obedience.",
+                "references": [
+                    "Rom. 1:5-6",
+                    "Heb. 11:6"
+                ]
+            }
+        },
+        "28": {
+            "german": {
+                "question": "Was ist der Glaube?",
+                "answer": "Der Glaube ist ein Geschenk, das wir erhalten, indem wir Gottes Wort hören. Es ist ein gewisses Vertrauen auf Gottes Verheißungen, wenn man für gewiss und wahrhaftig hält, was Gottes Wort sagt und verspricht, sonderlich von der Verheißung und Menschwerdung unseres Heilands, des Herrn Jesus Christus und seiner erworbenen Gnade und das ewige Leben. Durch sein Sterben und Blutvergießen hat er uns das ewige Leben erworben und geschenkt.",
+                "references": [
+                    "Rom 10,17",
+                    "Hebr 11,1"
+                ]
+            },
+            "english": {
+                "question": "What is faith?",
+                "answer": "Faith is a gift we receive when we listen to the Word of God. It is a confident trust in the promises of God when we hold for certain and true what God's Word says and promises, particularly regarding the prophesies and incarnation of our redeemer, the Lord Jesus Christ, and the grace and eternal life he has purchased for us. By his suffering and death he has secured and gifted us with eternal life.",
+                "references": [
+                    "Rom. 10:17",
+                    "Heb. 11:1"
+                ]
+            }
+        },
+        "29": {
+            "german": {
+                "question": "Was ist der göttliche Gehorsam?",
+                "answer": "Wenn man seinen eigenen Willen in Gottes Willen setzt und nachdem man Gottes Willen weiß, sich von Herzen befleißigt, nach Gottes Willen zu leben und zu wandeln.",
+                "references": [
+                    "3 Joh 1,11"
+                ]
+            },
+            "english": {
+                "question": "What is godly obedience?",
+                "answer": "When humans submit their own will to God's will, and after knowing God's will, endeavour to walk diligently and wholeheartedly according to God's will.",
+                "references": [
+                    "3 Jn. 1:11"
+                ]
+            }
+        },
+        "30": {
+            "german": {
+                "question": "Wodurch wird man im Glauben versichert und bekräftigt?",
+                "answer": "Durch das Wort Gottes und den Heiligen Geist, wenn man in der Taufe im Namen Jesu Christi Vergebung und Nachlassung der Sünden empfängt.",
+                "references": [
+                    "Apg 2,38"
+                ]
+            },
+            "english": {
+                "question": "How is one assured and confirmed in the faith?",
+                "answer": "Through the Word of God and through the Holy Spirit, when one receives baptism in the name of Christ Jesus our Lord for the forgiveness and remission of sin.",
+                "references": [
+                    "Acts 2:38"
+                ]
+            }
+        },
+        "31": {
+            "german": {
+                "question": "Was ist die Taufe?",
+                "answer": "Die Taufe ist ein äußerliches Werk, von dem Herrn Jesu selbst eingesetzt und befohlen, wodurch wir uns mit ihm vereinigen. Es geschieht mit Aufgießung des Wassers im Namen des Vaters, des Sohnes und des Heiligen Geistes.",
+                "references": [
+                    "Mt 28,19-20"
+                ]
+            },
+            "english": {
+                "question": "What is baptism?",
+                "answer": "Baptism is a symbol, an outward sign, instituted and commanded by the Lord Jesus himself, by which we become one with him. It takes place with the pouring of water in the name of the Father, the Son, and the Holy Spirit.",
+                "references": [
+                    "Mt. 28:19-20"
+                ]
+            }
+        },
+        "32": {
+            "german": {
+                "question": "Was lehrt und bedeutet die Wassertaufe?",
+                "answer": "Sie lehrt und bedeutet, dass der 'alte Adam' in uns durch tägliche Reue und Buße sterben und begraben werden soll. Daraus soll wiederum ein neuer Mensch auferstehen und hervorkommen, der in Gerechtigkeit und Heiligkeit vor Gott ewiglich lebe.",
+                "references": [
+                    "Kol 2,12",
+                    "Joh 12,24",
+                    "1 Petr 3,21"
+                ]
+            },
+            "english": {
+                "question": "What does baptism by water teach and signify?",
+                "answer": "It teaches and signifies that the 'old Adam' in us must die and be buried through daily remorse and repentance. From this process emerges a new and transformed person who lives in righteousness and holiness in God's presence forever.",
+                "references": [
+                    "Col. 2:12",
+                    "Jn. 12:24",
+                    "1 Pet. 3:21"
+                ]
+            }
+        },
+        "33": {
+            "german": {
+                "question": "Was ist und heißt der 'alte Adam'?",
+                "answer": "Alle sündhaften und bösen Begierden und Untugenden, die uns angeboren sind, welche auch zur Erbsünde gerechnet werden können.",
+                "references": [
+                    "Röm 5,14",
+                    "1 Kor 15,22"
+                ]
+            },
+            "english": {
+                "question": "What does the 'old Adam' represent?",
+                "answer": "All sinful, wicked desires and vices inherent to our nature, which can also be attributed to original sin.",
+                "references": [
+                    "Rom. 5:14",
+                    "1 Cor. 15:22"
+                ]
+            }
+        },
+        "34": {
+            "german": {
+                "question": "Wie soll der 'alte Adam' in uns getötet und begraben werden?",
+                "answer": "Durch tägliche Reue, Buße und Abstehen von allen Sünden und bösen Lüsten, in dem, dass man das Böse nicht mehr herrschen und ausbrechen lässt.",
+                "references": [
+                    "Röm 6,19"
+                ]
+            },
+            "english": {
+                "question": "How shall the 'old Adam' in us be slain and buried?",
+                "answer": "Through daily remorse, repentance, and abstinence from all sin and wicked desires, so that evil will no longer be able to break out and dominate us.",
+                "references": [
+                    "Rom. 6:19"
+                ]
+            }
+        },
+        "35": {
+            "german": {
+                "question": "Was ist der neue Mensch?",
+                "answer": "Nichts anderes als die Vollbringung des Willen Gottes und der neue göttliche Gehorsam, den der Heilige Geist in uns erwirkt, wenn er unsere Herzen und Gemüter immerdar vom Bösen zum Guten treibt und uns in aller Wahrheit leitet.",
+                "references": [
+                    "Röm 8,1-17"
+                ]
+            },
+            "english": {
+                "question": "What is the 'new man'?",
+                "answer": "Nothing less than the fulfilment of God's will and an emerging godly obedience, which the Holy Spirit empowers within us, as he continuously moves our hearts and minds from vice to virtue and leads us in all truth.",
+                "references": [
+                    "Rom. 8:1-17"
+                ]
+            }
+        },
+        "36": {
+            "german": {
+                "question": "Womit ist solches zu beweisen?",
+                "answer": "Im sechsten Kapitel des Römer-Briefs sagt Paulus: „Wir sind mit Christus durch die Taufe begraben in den Tod, auf dass, so wie Christus von den Toten auferweckt worden durch die Herrlichkeit des Vaters, also sollen auch wir in einem 'neuen Leben' wandeln.\"",
+                "references": [
+                    "Röm 6,4-11"
+                ]
+            },
+            "english": {
+                "question": "How does this become evident?",
+                "answer": "In the sixth chapter of Paul's letter to the Romans, he writes, \"Therefore we were buried with Christ through baptism into death, that just as he was raised from the dead by the glory of the Father, even so we should also walk in newness of life.\"",
+                "references": [
+                    "Rom. 6:4-11"
+                ]
+            }
+        },
+        "37": {
+            "german": {
+                "question": "Was meint der Apostel mit diesen Worten?",
+                "answer": "Er meint, dass so wie Christus leiblich gestorben und begraben worden ist, also sollen wir geistlicher Weise die bösen Anfechtungen und die sündhaften Lüste in uns töten und begraben; das heißt: wir sollen sie bezwingen und unterdrücken, dass sie nicht mehr ausbrechen und über uns herrschen können. Und wie Christus leiblich von den Toten auferweckt worden ist und nicht mehr stirbt, so will der Apostel, dass auch wir durch die Hilfe und den Beistand des Heiligen Geistes in ein himmlisches Leben treten und darinnen anhalten und bis ans Ende beharren.",
+                "references": []
+            },
+            "english": {
+                "question": "What does the Apostle mean with these words?",
+                "answer": "He indicates that, just as Christ died a mortal death and was physically buried, so too should we spiritually slay and bury any wicked temptations and sinful desires within us. We must overcome them, so that they no longer break out and dominate us. As Christ physically rose from the dead, never to die again, the apostle hopes that we too, with help and counsel from the Holy Spirit, will begin a godly life and persevere in it to the end.",
+                "references": []
+            }
+        },
+        "38": {
+            "german": {
+                "question": "Kann man denn auch wieder vom Guten und von der Gnade Gottes abfallen?",
+                "answer": "Jawohl! Wenn man nicht in beständiger Furcht und heiligem Aufmerken wandelt, so kann der Mensch gar leicht von der Gnade abfallen. „Darum,\" sagt Paulus, \"wer sich lässt dünken, er stehe, mag wohl zusehen, dass er nicht falle.\"",
+                "references": [
+                    "1 Kor 10,12",
+                    "1 Joh 5,8",
+                    "Mt 24,13",
+                    "Lk 9,62"
+                ]
+            },
+            "english": {
+                "question": "Can one fall away again from that which is good and from the grace of God?",
+                "answer": "Yes, indeed! If one does not faithfully walk in the fear of God and in holy watchfulness, one can quite easily fall from grace. Paul said, \"If you think you are standing firm, be careful that you do not fall!\"",
+                "references": [
+                    "1 Cor. 10:12",
+                    "1 Jn. 5:8",
+                    "Mt. 24:13",
+                    "Lk. 9:62"
+                ]
+            }
+        },
+        "39": {
+            "german": {
+                "question": "Wie geht es denn solchen Menschen, die da abfallen und Gottes Gnade verwerfen?",
+                "answer": "Weil sie den Heiligen Geist Gottes mit ihren Sünden entrüsten und erbittern, so weicht er von ihnen und übergibt sie in ihrer Herzenslust, zu tun, was nicht taugt.",
+                "references": [
+                    "Mt 12,43-45"
+                ]
+            },
+            "english": {
+                "question": "What happens to people who fall away and reject God's grace?",
+                "answer": "Because they antagonize and provoke the Holy Spirit of God with their sins, he departs from them and hands them over to the lusts of their heart to do that which has no blessing.",
+                "references": [
+                    "Mt. 12:43-45"
+                ]
+            }
+        },
+        "40": {
+            "german": {
+                "question": "Haben dann solche, die Gott mit ihren Sünden erzürnen und verachten, keine Hoffnung auf Seligkeit?",
+                "answer": "Nein! Denn solange sie in Sünden beharren, ist ihnen seine Gnade nichts anderes verheißen als Gottes Ungnade, Trübsal, Angst und ein Warten des schrecklichen Gerichts. Wenn sie aber Buße tun, ihre Sünden bereuen und sich bekehren, so ist Gott treu, und lässt sie in seinem Namen den Frieden und Vergebung der Sünden anzeigen.",
+                "references": [
+                    "1 Joh 1,9",
+                    "1 Joh 5,16",
+                    "Lk 17,3"
+                ]
+            },
+            "english": {
+                "question": "Do those who have angered God with their sins and scorned his grace, subsequently have any hope of salvation?",
+                "answer": "No! For as long as they persist in sin, they are promised nothing but God's disfavour, tribulation, fear, and the prospect of terrible judgment. However, if they do penance, regret their sins and repent, God will be faithful and bestow peace and forgiveness in his name.",
+                "references": [
+                    "1 Jn. 1:9",
+                    "1 Jn. 5:16",
+                    "Lk. 17:3"
+                ]
+            }
+        },
+        "41": {
+            "german": {
+                "question": "Durch wen lässt Gott den Frieden und die Vergebung der Sünden verkündigen und anzeigen?",
+                "answer": "Durch seine Lehrer und Diener, welche Haushalter und Kundschafter sind, an Christi statt.",
+                "references": [
+                    "Joh 20,19-23"
+                ]
+            },
+            "english": {
+                "question": "Through whom does God allow peace and forgiveness of sins to be proclaimed?",
+                "answer": "Through his teachers and servants, who are stewards and agents on Christ's behalf.",
+                "references": [
+                    "Jn. 20:19-23"
+                ]
+            }
+        },
+        "42": {
+            "german": {
+                "question": "Von wem haben die Lehrer und Diener die Macht, den Frieden und die Vergebung der Sünden zu verkündigen?",
+                "answer": "Von dem Herrn Jesu selbst, denn er gab ihnen zwei Schlüssel: einen zu lösen, den andern zu binden.",
+                "references": [
+                    "Mt 16,19",
+                    "Joh 20,22-23"
+                ]
+            },
+            "english": {
+                "question": "From whom do the teachers and servants have the authority to proclaim peace and the forgiveness of sins?",
+                "answer": "From our Lord Jesus himself when he gave them two keys- one to loosen, the other to bind. \"And he breathed on them and said, 'Receive the Holy Spirit! If you forgive the sins of any, their sins have been forgiven them; if you retain the sins of any, they have been retained.\"",
+                "references": [
+                    "Mt. 16:19",
+                    "Jn. 20:22-23"
+                ]
+            }
+        },
+        "43": {
+            "german": {
+                "question": "Was ist der Bindeschlüssel?",
+                "answer": "Es ist der Bann, mit welchem die unbußfertigen Sünder von der Gemeinde gewiesen werden, damit sie dadurch zur Buße geleitet und zu Gnade bei Gott kommen möchten.",
+                "references": [
+                    "1 Kor 5,4-5",
+                    "1 Kor 5,9-13"
+                ]
+            },
+            "english": {
+                "question": "What is the key to bind?",
+                "answer": "It is the ban, by which unrepentant sinners are excluded from the community, so that they may be brought to repentance and thereby return to the grace of God.",
+                "references": [
+                    "1 Cor. 5:4-5",
+                    "1 Cor. 5:9-13"
+                ]
+            }
+        },
+        "44": {
+            "german": {
+                "question": "Was ist der Löseschlüssel?",
+                "answer": "Es ist die Macht der Diener Christi, dadurch sie die bußfertigen Sünder von ihren Schulden, im Namen des Vaters, des Sohnes, und des Heiligen Geistes freisprechen, und wieder in die Gemeinschaft der Heiligen aufnehmen.",
+                "references": [
+                    "Mt 16,19"
+                ]
+            },
+            "english": {
+                "question": "What is the key to loosen?",
+                "answer": "It is the authority of the servants of Christ, by which the sins and transgressions of repentant sinners are absolved in the name of the Father, the Son, and the Holy Spirit, and accepted back into the fellowship of believers.",
+                "references": [
+                    "Mt. 16:19"
+                ]
+            }
+        },
+        "45": {
+            "german": {
+                "question": "Was ist die Gemeinschaft der Heiligen?",
+                "answer": "Erstens ist die Gemeinschaft der Heiligen der neue Gnadenbund in Christo. Alle, die Christus durch den Glauben aufnehmen und ihm folgen, haben den gleichen Lohn und gleiche Seligkeit zu hoffen durch seinen Namen und Verdienst. \"Da ist nicht mehr Grieche oder Jude, weder Sklaven noch Freie, weder Mann noch Frau sondern überall und in allem Christus!\"(Gal 3,28)<br>Er ist das Haupt und wir seine Gläubigen, seine Glieder; wir in ihm und er in uns, er im Vater und der Vater in ihm. (1 Kor 12.12; 1 Joh 1,1-7)<br>Und zum andern ist es auch eine Gemeinschaft der Heiligen wenn die Gläubigen mit gelassenem Herzen einander dienen. Da sagt keiner von seinen Gütern, dass sie sein sind, sondern sie halten alles aber, die gläubig geworden waren, waren beieinander, und hielten alle gemein\" wie die ersten Christen. Von ihnen steht geschrieben: „Alle Dinge gemein. Ihre Güter und Habe verkauften sie und teilten sie aus unter allen, nachdem jedermann not war.\" (Apg 2.44-45)<br>Und wer in solcher Gemeinschaft der Heiligen hier in dieser Zeit wahrhaftig lebt und also bis ans Ende treu bleibt und beharret, der wird auch in jener Zeit in der Gemeinschaft der Heiligen gefunden werden. Christus wird ihnen ankünden: „Kommt her, ihr Gesegneten meines Vaters, ererbt das Reich, das euch bereitet ist von Anbeginn der Welt.\"",
+                "references": [
+                    "Gal 3,28",
+                    "1 Kor 12.12",
+                    "1 Joh 1,1-7",
+                    "Apg 2.44-45",
+                    "Mt 25,34"
+                ]
+            },
+            "english": {
+                "question": "What is the fellowship of believers?",
+                "answer": "Above all, the fellowship of believers is the new covenant of grace in Christ. All who accept Christ through faith and follow him may hope for the same reward and salvation through his name and merit. \"There is no longer Greek or Jew, neither slave or free, male or female, but Christ over all and in all!\" (Gal. 3:28)<br>He is the Head and we believers are his members; we abide in him and he in us, he in the Father, and the Father in him. (1 Cor. 12:12; 1 Jn. 1:1-7)<br>Additionally, there is fellowship among believers when the faithful serve one another with yielded hearts. No one lays claim to personal possessions, but rather, they \"hold all things common\" as the early Christians did. Of them it is written, \"All the believers were together and had everything in common. They sold their possessions and goods, and shared them with all, as each had need.\" (Acts 2:44-45)<br>Thus, those who faithfully live in such a community of believers here in this age and remain true, enduring to the end, will be part of the community of believers in the age to come. Christ will declare, \"Come, you who are blessed of my Father, inherit the kingdom prepared for you from the foundation of the world.\" (Mt. 25:34)",
+                "references": [
+                    "Gal. 3:28",
+                    "1 Cor. 12:12",
+                    "1 Jn. 1:1-7",
+                    "Acts 2:44-45",
+                    "Mt. 25:34"
+                ]
+            }
+        },
+        "46": {
+            "german": {
+                "question": "Wie verhält es sich mit dem Menschen, wenn er gestorben und in der Erde begraben wird?",
+                "answer": "Der gestorbene Leib der in der Erde begraben wird, der vergeht und wird wieder Staub und Erde, wie denn Gott zu Adam gesagt: „Du bist Erde und sollst... wieder zu Erde werden, von der du genommen bist.\" (1 Mose 3,19)<br>Die Seele aber, die in des Menschen Leib wohnt, ist unsterblich und ewig. Wenn ihr Haus-das heißt, ihr Leib-zerbricht und stirbt, so. nimmt sie Gott wieder zu sich und gibt ihr einen neuen, verklärten Leib. Der neue Leib wird den Engeln gleich sein, und alle, durch den Herrn Christo erworbene Herrlichkeit sehen und genießen. Wie aber und zu welcher Zeit solches geschehen wird, hat uns Gott verborgen und hat es seiner Allwissenheit und Macht allein vorbehalten, und es ist auch unnötig es wissen zu wollen, oder davon zu schreiben. Wir Gläubigen haben an den Worten unseres Seligmachers Jesu Christi genug, wenn er uns mit seinem wahrhaftigen Munde verheißt, dass wir den Tod ewiglich nicht sehen sollen, und dass wir nimmermehr sterben werden. Obwohl der natürliche Leib sterben wird, sollen wir dennoch leben. Auch dass wir, nach Ablegung dieses sterblichen Leibes, mit Abraham, Isaak, und Jakob im Himmelreich sitzen und wie die Engel Gottes im Himmel sein werden. Ja, dass wir sein sollen, wo er ist! „Und wenn ich hingehe,\" sagt der Herr Christus, euch die Stätte zu bereiten, so will ich wiederkommen und euch zu mir nehmen, auf dass ihr seid, wo ich bin.\" (Joh 14,3)<br>Wie er auch in seinem hohepriesterlichen Gebet seinen himmlischen Vater bittet und sagt: „Vater, ich will, dass, wo ich bin, auch die bei mir sein, die du mir gegeben hast, dass sie meine Herrlichkeit sehen, die du mir gegeben hast; denn du hast mich geliebt, ehe die Welt gegründet ward.\" (Joh 17,24)<br>Also ist der Frommen und Gläubigen Hinscheiden nicht ein Tod, sondern nur ein Wechsel aus dem zeitlichen in das ewige Leben. Denn sie sind „vom Tode zum Leben hindurchgedrungen\" sagt der Herr Christus. (Joh 5,24)<br><br>Die Gnade Gottes unseres Herrn Jesu Christi,<br>und die Liebe Gottes des Vaters,<br>und die Gemeinschaft des Heiligen Geistes,<br>sei mit euch und mit uns allen. Amen.",
+                "references": [
+                    "1 Mose 3,19",
+                    "Joh 14,3",
+                    "Joh 17,24",
+                    "Joh 5,24"
+                ]
+            },
+            "english": {
+                "question": "What happens to a person who has died and is buried in the earth?",
+                "answer": "The dead body, which is buried in the earth, decomposes and returns to dust and soil, for as God said to Adam, \"You are dust and to dust you shall return.\" (Gen. 3:19)<br>The soul, however, which dwells in the body, is immortal and eternal. When its dwelling place-that is, the body-breaks down and dies, God receives the soul unto himself and gives it a new, transformed body. This new body will be like the angels', able to see and enjoy the full glory made available through Christ our Lord. God, however, in his omniscience and omnipotence has concealed from us how and when this will happen, and it is unnecessary to study or write about this. We believers are content with the words of Christ Jesus our Saviour, who with his truthful instruction promised that we will not suffer eternal death, nor will we ever die again. Although our earthly body will die, we shall still live. Upon putting aside this mortal body, we shall dwell in heaven with Abraham, Isaac, and Jacob; we shall be like the angels of God in heaven. Yes, that we may be where he is! \"And if I go,\" says Christ our Lord, \"and prepare a place for you, I will come again and will take you to myself, so that where I am, there you may be also.\" (Jn. 14:3)<br>In the intercessory prayer to his heavenly Father he pleads, \"Father, I want those you have given me to be with me where I am, and to see my glory, the glory you have given me because you loved me before the creation of the world.\" (Jn. 17:24)<br>Thus, in reality, the passing away of the faithful and devout is not a death, but merely a transition from a temporal to an eternal life. \"They have passed from death to life,\" says our Lord Jesus Christ. (Jn. 5:24)<br><br>The grace of God through our Lord Jesus Christ,<br>and the love of God the Father,<br>and the fellowship of the Holy Spirit<br>be with you and with us all. Amen.",
+                "references": [
+                    "Gen. 3:19",
+                    "Jn. 14:3",
+                    "Jn. 17:24",
+                    "Jn. 5:24"
+                ]
+            }
+        }
+    }
+}

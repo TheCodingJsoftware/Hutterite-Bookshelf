@@ -1,54 +1,56 @@
 const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const fs = require('fs');
+
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+const entries = {
+    index: './src/index.ts',
+    baptism_booklet: './src/baptism_booklet.ts',
+};
+
+const htmlPlugins = Object.keys(entries).map(entryName => {
+    const templatePath = path.resolve(__dirname, `./templates/${entryName}.html`);
+    if (fs.existsSync(templatePath)) {
+        return new HtmlWebpackPlugin({
+            template: templatePath,
+            filename: `html/${entryName}.html`,
+            chunks: [entryName],
+        });
+    } else {
+        console.warn(`Warning: Template for ${entryName} does not exist. Skipping...`);
+        return null;
+    }
+}).filter(Boolean);
 
 module.exports = {
-    entry: {
-        index: './src/index.ts',
-        privacy_option: './src/privacy_policy.ts',
+    resolve: {
+        extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
     },
+    entry: entries,
     output: {
-        filename: '[name].bundle.js',
+        filename: 'js/[name].bundle.js',
         path: path.resolve(__dirname, 'dist'),
         publicPath: '/dist/',
     },
+    mode: 'production',
     module: {
         rules: [
-        {
-            test: /\.ts$/,
-            use: 'ts-loader',
-            exclude: /node_modules/,
-        },
-        {
-            test: /\.css$/,
-            use: [MiniCssExtractPlugin.loader, 'css-loader'],
-        },
+            {
+                test: /\.ts$/,
+                use: 'ts-loader',
+                exclude: /node_modules/,
+            },
+            {
+                test: /\.css$/,
+                use: [MiniCssExtractPlugin.loader, 'css-loader'],
+            },
         ],
-    },
-    mode: 'production',
-    optimization: {
-        minimize: true,
-        runtimeChunk: 'single',
-        splitChunks: {
-        chunks: 'all',
-        },
-    },
-    resolve: {
-        extensions: ['.ts', '.js'],
     },
     plugins: [
         new MiniCssExtractPlugin({
-            filename: '[name].[contenthash].css',
+            filename: 'css/[name].bundle.css',
         }),
-        new HtmlWebpackPlugin({
-            template: './templates/index.html',
-            filename: 'index.html',
-            chunks: ['index', 'runtime', 'vendors'], // Include only the index.ts related chunks
-        }),
-        new HtmlWebpackPlugin({
-            template: './templates/privacy_policy.html',
-            filename: 'privacy_policy.html',
-            chunks: ['privacy_option', 'runtime', 'vendors'], // Include only the privacy_policy.ts related chunks
-        }),
+        ...htmlPlugins, // Include all the dynamically generated HtmlWebpackPlugin instances
     ],
 };
