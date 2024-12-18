@@ -104,7 +104,6 @@ details {
     width: auto;
     height: auto;
     overflow: hidden;
-    max-height: 5rem !important;
     transition: all 0.3s ease;
 
     ::-webkit-details-marker {

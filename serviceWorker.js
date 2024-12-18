@@ -11,6 +11,7 @@ const urlsToCache = [
     '/dist/runtime.bundle.js',
     '/dist/361.bundle.js',
     '/dist/index.html',
+    '/dist/baptism_booklet.html',
     '/dist/privacy_policy.html',
 ];
 

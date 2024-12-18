@@ -5,93 +5,121 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
     <link rel="icon" href="/static/icons/favicon.png"/>
-    <link rel="manifest" href="/static/manifest.json"/>
-    <link rel="manifest" href="/static/app.webmanifest"/>
     <meta name="description" content="A comprehensive app for accessing, managing, and sharing Hutterite literature."/>
     <title>Hutterite Bookshelf</title>
   </head>
 
   <header class="fixed no-padding">
     <nav class="primary left-padding right-padding">
-      <button class="circle transparent" id="nav-bar-open">
-        <img class="responsive" fetchpriority="low" loading="lazy" src="/static/icons/favicon.png" alt="" width="32" height="32"/>
+      <button class="circle transparent" onclick="window.location.href = '';">
+        <i>arrow_back</i>
       </button>
       <h5 class="max center-align small">Baptism Booklet</h5>
+      <button class="circle transparent" onclick="mode()" id="toggle-theme">
+          <i>dark_mode</i>
+      </button>
     </nav>
   </header>
 
   <body>
     <main class="responsive">
-      <article>
-        <h3>Settings</h3>
-        <hr>
-        <br>
-        <!-- Language Switch -->
-        <label class="checkbox">
-          <input type="checkbox" id="always-open-checkbox"/>
-          <span>Open All Questions</span>
-        </label>
-        <br>
-        <div class="field middle-align medium-width">
-          <nav>
-            <div class="max">
-              <h6>Translate</h6>
-              <div>Translate All Questions from German to English</div>
-            </div>
-            <label class="switch icon">
-              <input type="checkbox" class="translate-checkbox" data-question="{{question_number}}" autocomplete="off" id="language-switch-checkbox"/>
-              <span>
-                <i>translate</i>
-              </span>
-            </label>
-          </nav>
+        <div class="tabs">
+          <a class="active" data-ui="#frage">Frage</a>
+          <a data-ui="#spruch">Spruch</a>
+          <a data-ui="#request">Request</a>
         </div>
-      </article>
-      <div class="grid no-space" style="align-items: center;">
-        {% for question_number, question_data in baptism_booklet_data["questions_and_answers"].items() %}
-          <details class="small-margin small-round s12 m6 l6">
-            <summary class="small-padding fill row">
-              <!-- German Question -->
-              <span class="german max" id="german-question-{{question_number}}" style="display: block">
-                {{question_number}}.
-                {{question_data["german"]["question"]}}
-                <button class="primary small-round circle none badge" onclick="playaudio('german/q{{question_number}}', this)">
-                  <i>play_arrow</i>
-                </button>
-              </span>
-              <!-- English Question -->
-              <span class="english max" id="english-question-{{question_number}}" style="display: none">
-                {{question_number}}.
-                {{question_data["english"]["question"]}}
-                <button class="primary small-round circle none badge" onclick="playaudio('english/q{{question_number}}', this)">
-                  <i>play_arrow</i>
-                </button>
-              </span>
+        <div class="page no-padding active" id="frage">
+          <label class="checkbox padding">
+            <input type="checkbox" id="always-open-checkbox"/>
+            <span>Open All Questions</span>
+          </label>
+          <!-- Language Switch -->
+          <div class="field middle-align medium-width top-margin">
+            <nav>
+              <div class="max">
+                <h6>Translate</h6>
+                <div>Translate All Questions from German to English</div>
+              </div>
               <label class="switch icon">
-                <input type="checkbox" class="translate-checkbox" data-question="{{question_number}}" autocomplete="off"/>
+                <input type="checkbox" class="translate-checkbox" data-question="{{question_number}}" autocomplete="off" id="language-switch-checkbox"/>
                 <span>
                   <i>translate</i>
                 </span>
               </label>
-            </summary>
+            </nav>
+          </div>
+          <div class="grid no-space" style="align-items: center;">
+            {% for question_number, question_data in baptism_booklet_data["questions_and_answers"].items() %}
+              <details class="small-margin small-round s12 m6 l6">
+                <summary class="small-padding fill row">
+                  <!-- German Question -->
+                  <span class="german max no-line" id="german-question-{{question_number}}" style="display: block">
+                    {{question_number}}.
+                    {{question_data["german"]["question"]}}
+                    <button class="primary small-round circle none badge" onclick="playaudio('frage/german/q{{question_number}}', this)">
+                      <i>play_arrow</i>
+                    </button>
+                  </span>
+                  <!-- English Question -->
+                  <span class="english max no-line" id="english-question-{{question_number}}" style="display: none">
+                    {{question_number}}.
+                    {{question_data["english"]["question"]}}
+                    <button class="primary small-round circle none badge" onclick="playaudio('frage/english/q{{question_number}}', this)">
+                      <i>play_arrow</i>
+                    </button>
+                  </span>
+                  <label class="switch icon">
+                    <input type="checkbox" class="translate-checkbox" data-question="{{question_number}}" autocomplete="off"/>
+                    <span>
+                      <i>translate</i>
+                    </span>
+                  </label>
+                </summary>
 
-            <!-- Answers -->
-            <pre class="german no-margin no-line" id="german-answer-{{question_number}}" style="display: block">{{question_data["german"]["answer"]}}<button class="primary small-round circle none badge" onclick="playaudio('german/a{{question_number}}', this)"><i>play_arrow</i></button></pre>
-            <pre class="english no-margin no-line" id="english-answer-{{question_number}}" style="display: none">{{question_data["english"]["answer"]}}<button class="primary small-round circle none badge" onclick="playaudio('english/a{{question_number}}', this)"><i>play_arrow</i></button></pre>
+                <!-- Answers -->
+                <pre class="german no-margin no-line" id="german-answer-{{question_number}}" style="display: block">{{question_data["german"]["answer"]}}<button class="primary small-round circle none badge" onclick="playaudio('frage/german/a{{question_number}}', this)"><i>play_arrow</i></button></pre>
+                <pre class="english no-margin no-line" id="english-answer-{{question_number}}" style="display: none">{{question_data["english"]["answer"]}}<button class="primary small-round circle none badge" onclick="playaudio('frage/english/a{{question_number}}', this)"><i>play_arrow</i></button></pre>
 
-            <!-- References -->
-            <div class="german right-align" id="german-reference-{{question_number}}" style="display: block">
-              {% for reference in question_data["german"]["references"] %}
-                <a class="none badge small-round tiny-padding transparent wave">{{reference}}</a>
-              {% endfor %}
-            </div>
-            <div class="english right-align" id="english-reference-{{question_number}}" style="display: none">
-              {% for reference in question_data["english"]["references"] %}
-                <a class="none badge small-round tiny-padding transparent wave">{{reference}}</a>
-              {% endfor %}
-            </div>
-          </details>
-        {% endfor %}
+                <!-- References -->
+                <div class="german right-align" id="german-reference-{{question_number}}" style="display: block">
+                  {% for reference in question_data["german"]["references"] %}
+                    <a class="none badge small-round tiny-padding transparent wave">{{reference}}</a>
+                  {% endfor %}
+                </div>
+                <div class="english right-align" id="english-reference-{{question_number}}" style="display: none">
+                  {% for reference in question_data["english"]["references"] %}
+                    <a class="none badge small-round tiny-padding transparent wave">{{reference}}</a>
+                  {% endfor %}
+                </div>
+              </details>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="page no-padding center-align" id="spruch">
+          <p class="center-align bold">GOTTES ERLÖSUNGSPLAN II Ein anderer schöner Spruch für die Täuflinge zu lernen.</p>
+          <button class="primary small-round tiny" onclick="playaudio('spruch/full', this)">
+            <i>play_arrow</i>
+          </button>
+          {% for verse_number, content in baptism_booklet_data["poems"]["gottes_erlösungsplan"].items() %}
+            <p class="no-line center-align">
+              {{verse_number}}. {{content}} <button class="primary small-round circle none badge" onclick="playaudio('spruch/{{verse_number}}', this)">
+                      <i>play_arrow</i>
+                    </button>
+            </p>
+            {% endfor %}
+        </div>
+        <div class="page no-padding" id="request">
+          <div class="grid no-space">
+            <article class="s12 m6 l6 margin">
+              <h6>{{baptism_booklet_data["request"]["german"]["title"]}}</h6>
+              <p class="no-line">{{baptism_booklet_data["request"]["german"]["content"]}}</p>
+            </article>
+            <article class="s12 m6 l6 margin">
+              <h6>{{baptism_booklet_data["request"]["english"]["title"]}}</h6>
+              <p class="no-line">{{baptism_booklet_data["request"]["english"]["content"]}}</p>
+            </article>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -166,7 +194,28 @@
           button.innerHTML = '<i>play_arrow</i>'; // Reset button to play
         });
       }
+      const updateIcon = (mode) => {
+          const iconElements = document.querySelectorAll('#toggle-theme i');
+          iconElements.forEach(iconElement => {
+              iconElement.textContent = mode === "dark" ? "light_mode" : "dark_mode";
+          });
+      };
+
+      const mode = () => {
+          let currentMode = localStorage.getItem("mode") || "dark";
+          let newMode = currentMode === "dark" ? "light" : "dark";
+          localStorage.setItem("mode", newMode); // Save mode to localStorage
+          ui("mode", newMode);
+          updateIcon(newMode);
+          document.documentElement.classList.toggle("dark", newMode === "dark");
+      };
+
       document.addEventListener("DOMContentLoaded", () => {
+        let savedMode = localStorage.getItem("mode") || "light";
+        ui("mode", savedMode);
+        updateIcon(savedMode);
+        document.documentElement.classList.toggle("dark", savedMode === "dark");
+
         const languageSwitchCheckbox = document.getElementById("language-switch-checkbox");
         const alwaysOpenCheckbox = document.getElementById("always-open-checkbox");
         const translateCheckboxes = document.querySelectorAll(".translate-checkbox");
@@ -247,5 +296,4 @@
       });
     </script>
   </body>
-
 </html>
