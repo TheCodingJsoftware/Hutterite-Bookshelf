@@ -43,7 +43,7 @@ CUSTOM_COLLECTION_TABLES = [
 ]
 
 INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
-VERSION = "0.0.7"
+VERSION = "0.0.8"
 
 
 POSTGRES_USER = os.environ.get("POSTGRES_USER")
@@ -439,6 +439,7 @@ def make_app():
             (r"/", MainHandler),
             (r"/baptism_booklet", BaptismBookletHandler),
             (r"/privacy_policy", PrivacyPolicyHandler),
+            (r"/privacy", PrivacyPolicyHandler),
             (r"/serviceWorker.js", ServiceWorkerHandler),
             (r"/dist/(.*)", tornado.web.StaticFileHandler, {"path": "dist"}),
             (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "static"}),
