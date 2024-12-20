@@ -7,6 +7,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const entries = {
     index: './src/index.ts',
     baptism_booklet: './src/baptism_booklet.ts',
+    privacy_policy: './src/privacy_policy.ts',
 };
 
 const htmlPlugins = Object.keys(entries).map(entryName => {
