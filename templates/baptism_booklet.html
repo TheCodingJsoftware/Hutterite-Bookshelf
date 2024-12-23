@@ -29,6 +29,22 @@
           <a data-ui="#request">Request</a>
         </div>
         <div class="page no-padding active" id="frage">
+          <nav class="center-align top-padding">
+            <!-- German Question -->
+            <button class="primary small-round tiny german" id="german-question-0" onclick="playaudio('frage/german/full', this)" style="display: block">
+              <i>play_arrow</i>
+            </button>
+            <a href="/static/audio/frage/german/full.mp3" download="Baptism - Frage (German).mp3" class="border small-round tiny german small-padding wave" style="display: block">
+              <i>download</i>
+            </a>
+            <!-- English Question -->
+            <button class="primary small-round tiny english" id="english-question-0" onclick="playaudio('frage/english/full', this)" style="display: none">
+              <i>play_arrow</i>
+            </button>
+            <a href="/static/audio/frage/english/full.mp3" download="Baptism - Frage (English).mp3" class="border small-round tiny english small-padding wave" style="display: none">
+              <i>download</i>
+            </a>
+          </nav>
           <label class="checkbox padding">
             <input type="checkbox" id="always-open-checkbox"/>
             <span>Open All Questions</span>
@@ -97,9 +113,14 @@
         </div>
         <div class="page no-padding center-align" id="spruch">
           <p class="center-align bold">GOTTES ERLÖSUNGSPLAN II Ein anderer schöner Spruch für die Täuflinge zu lernen.</p>
-          <button class="primary small-round tiny" onclick="playaudio('spruch/full', this)">
-            <i>play_arrow</i>
-          </button>
+          <nav class="center-align top-padding">
+            <button class="primary small-round tiny" onclick="playaudio('spruch/full', this)">
+              <i>play_arrow</i>
+            </button>
+            <a href="/static/audio/spruch/full.mp3" download="Baptism - Spruch (German).mp3" class="border small-round tiny english small-padding wave">
+              <i>download</i>
+            </a>
+          </nav>
           {% for verse_number, content in baptism_booklet_data["poems"]["gottes_erlösungsplan"].items() %}
             <p class="no-line center-align">
               {{verse_number}}. {{content}} <button class="primary small-round circle none badge" onclick="playaudio('spruch/{{verse_number}}', this)">
