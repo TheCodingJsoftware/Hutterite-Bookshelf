@@ -43,7 +43,7 @@ CUSTOM_COLLECTION_TABLES = [
 ]
 
 INACTIVITY_TIMEOUT = timedelta(hours=5)  # 5 hours
-VERSION = "0.0.8"
+VERSION = "0.0.9"
 
 
 POSTGRES_USER = os.environ.get("POSTGRES_USER")
