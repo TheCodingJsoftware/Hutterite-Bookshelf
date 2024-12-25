@@ -94,8 +94,8 @@ class MainHandler(tornado.web.RequestHandler):
 
 class BaptismBookletHandler(tornado.web.RequestHandler):
     def get(self):
-        template = env.get_template("baptism_booklet.html")
-        with open("static/baptism_booklet_data.json", "r", encoding="utf-8") as f:
+        template = env.get_template("baptismBooklet.html")
+        with open("static/data/baptism_booklet_data.json", "r", encoding="utf-8") as f:
             data = json.load(f)
         rendered_template = template.render(baptism_booklet_data=data)
         self.write(rendered_template)
@@ -103,7 +103,7 @@ class BaptismBookletHandler(tornado.web.RequestHandler):
 
 class PrivacyPolicyHandler(tornado.web.RequestHandler):
     def get(self):
-        template = env.get_template("privacy_policy.html")
+        template = env.get_template("privacyPolicy.html")
         rendered_template = template.render()
         self.write(rendered_template)
 
@@ -443,6 +443,7 @@ def make_app():
             (r"/serviceWorker.js", ServiceWorkerHandler),
             (r"/dist/(.*)", tornado.web.StaticFileHandler, {"path": "dist"}),
             (r"/static/(.*)", tornado.web.StaticFileHandler, {"path": "static"}),
+            (r"/src/(.*)", tornado.web.StaticFileHandler, {"path": "src"}),
             (r"/api/files", FilesHandler),
             (r"/api/public_folders", PublicFoldersHandler),
             (r"/ws", SingAlongWebSocket),
