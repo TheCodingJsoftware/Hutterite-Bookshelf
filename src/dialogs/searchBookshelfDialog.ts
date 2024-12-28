@@ -9,7 +9,6 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
     searchInput: HTMLInputElement;
     songList: HTMLDivElement;
     closeButton: HTMLButtonElement;
-    clearSearchButton: HTMLButtonElement;
     clearTagsButton: HTMLButtonElement;
     tagButtons: TagButton[] = [];
 
@@ -18,24 +17,20 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         super.attachTo();
         const template = document.createElement('template') as HTMLTemplateElement;
         template.innerHTML = `
-            <dialog>
-                <h4 class="center-align">${this.title}</h4>
+            <dialog id="search-dialog">
                 <div class="row">
-                    <div class="field label prefix border small max">
+                    <div class="field label prefix suffix border small max">
                         <i>search</i>
                         <input type="search" type="text" id="search-input" spellcheck="false" autocapitalize="off" autocomplete="off" autofocusoff/>
                         <label>Search</label>
                         <span class="helper">Search using song titles or numbers</span>
                     </div>
-                    <button class="transparent link circle" id="clear-search-button">
-                        <i>close</i>
-                    </button>
                 </div>
                 <div class="large-space"></div>
                 <div class="row">
                     <label class="max">Select tags</label>
                     <button class="transparent link circle" id="clear-tags-button">
-                        <i>close</i>
+                        <i>delete</i>
                     </button>
                 </div>
                 <nav class="no-margin no-space scroll medium-width" id="books-tag-list">
@@ -45,7 +40,7 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
                 <h6>Songs</h6>
                 <div id="song-list">
                 </div>
-                <nav class="right-align">
+                <nav class="bottom transparent right-align">
                     <button class="transparent link small-round" id="close-dialog">
                         <span>Close</span>
                     </button>
@@ -57,7 +52,6 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         this.searchInput = this.dialog.querySelector("#search-input") as HTMLInputElement;
         this.songList = this.dialog.querySelector("#song-list") as HTMLDivElement;
         this.closeButton = this.dialog.querySelector("#close-dialog") as HTMLButtonElement;
-        this.clearSearchButton = this.dialog.querySelector("#clear-search-button") as HTMLButtonElement;
         this.clearTagsButton = this.dialog.querySelector("#clear-tags-button") as HTMLButtonElement;
         this.init();
     }
@@ -78,11 +72,6 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         });
         this.closeButton.onclick = () => this.close();
         this.setSearchTermFromLocalStorage();
-
-        this.clearSearchButton.onclick = () => {
-            this.searchInput.value = "";
-            this.addSearchToLocalStorage("");
-        };
 
         this.clearTagsButton.onclick = () => {
             this.tagButtons.forEach(tagButton => {
@@ -126,6 +115,10 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         }
     }
 
+    private showClearTagButton(){
+        this.clearTagsButton.style.display = "block";
+    }
+
     private clearSearchFromLocalStorage() {
         const key = `search-${this.title}`;
         localStorage.removeItem(key);
@@ -135,9 +128,24 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         super.showOverlay();
         this.dialog.show()
         this.setSearchTermFromLocalStorage();
-        setTimeout(() => {
-            this.searchInput.focus();
-        }, 50);
+    }
+
+    public setTag(hash: string){
+        this.tagButtons.forEach(tagButton => {
+            tagButton.unselect();
+        });
+        const tag = hash.replace("#", "");
+        this.tagButtons.forEach(tagButton => {
+            if (tagButton.tagID === tag) {
+                tagButton.select();
+                tagButton.getButton().scrollIntoView({
+                    behavior: "smooth",
+                    block: "center",
+                    inline: "nearest",
+                });
+                return
+            }
+        });
     }
 
     public close(){

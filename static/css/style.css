@@ -2,36 +2,6 @@
     display: none !important;
 }
 
-#file-content p span {
-    display: block;
-    line-height: normal;
-}
-
-#nav-bar {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    padding: 16px;
-}
-
-.file-item i {
-    display: none;
-}
-
-.file-item.selectable i {
-    display: flex;
-}
-
-.file-item.selectable {
-    cursor: pointer;
-}
-
-.file-item.selected {
-    background-color: var(--on-primary) !important;
-    color: var(--primary) !important;
-}
-
 ::selection {
     color: var(--on-primary);
     background-color: var(--primary);
@@ -57,22 +27,6 @@ p.active-paragraph.blur-none {
     color: inherit;
 }
 
-#file-content.blur p:not(.active-paragraph) {
-    filter: blur(4px);
-    pointer-events: none;
-}
-
-#file-content.blur p:not(.active-paragraph),
-#file-content.blur {
-    background-color: inherit;
-    color: inherit;
-}
-
-.group-content {
-    max-height: 300px;
-    overflow-y: scroll;
-}
-
 details:not(.none) {
     background-color: var(--primary) !important;
 }
@@ -82,7 +36,7 @@ details:not(.none)::-webkit-details-marker {
 }
 
 details:not(.none) summary {
-    color: var(--on-primary) !important;
+    color: var(--on-surface) !important;
 }
 
 details:not(.none)[open] {

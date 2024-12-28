@@ -3,12 +3,11 @@ import "material-dynamic-colors";
 import "remixicon/fonts/remixicon.css";
 import "../static/css/style.css";
 import { loadTheme, loadAnimationStyleSheet } from "./utils/theme";
-import { BookButtonManager } from "./utils/bookButtonManager";
 import { SearchBookshelfDialog } from "./dialogs/searchBookshelfDialog";
 import { Tags } from "./utils/tags";
 import { BookButton } from "./utils/bookButton";
+import { SubjectButton } from "./utils/subjectButton";
 
-const bookButtonManager = new BookButtonManager();
 const searchBookshelfDialog = new SearchBookshelfDialog();
 searchBookshelfDialog.attachTo();
 
@@ -100,6 +99,14 @@ async function loadBooks(){
     }
 }
 
+async function loadSubjects(){
+    const subjectsList = document.getElementById("subjects-list") as HTMLDivElement;
+    for (const subject of Object.values(Tags.GERMAN_SUBJECTS)) {
+        const subjectButton = new SubjectButton(subject);
+        subjectsList.appendChild(subjectButton.getButton());
+    }
+}
+
 async function loadUIComponents() {
     try {
         const [themeDialogModule, infoDialogModule] = await Promise.all([
@@ -117,10 +124,7 @@ async function loadUIComponents() {
         infoDialog.attachTo();
 
         const searchButton = document.getElementById("search-button") as HTMLButtonElement;
-        searchButton.onclick = () => {
-            window.location.hash = "#search";
-            searchBookshelfDialog.open();
-        };
+        searchButton.onclick = () => window.location.hash = "#search";
     } catch (error) {
         console.error("Error loading UI components:", error);
     }
@@ -128,12 +132,20 @@ async function loadUIComponents() {
 
 function checkHashes() {
     const hash = window.location.hash;
-    if (hash === "#alleluia-sing") {
-        bookButtonManager.openAlleluiaSingDialog();
-    } else if (hash === "#search") {
+    if (hash === "#baptism-booklet") {
+        window.location.hash = "";
+        window.location.href = "/baptism_booklet";
+        return;
+    }
+    if (hash === "#search") {
         searchBookshelfDialog.open();
+        setTimeout(() => {
+            searchBookshelfDialog.searchInput.focus();
+        }, 50);
+    } else if (hash !== "#search" && hash !== "") {
+        searchBookshelfDialog.open();
+        searchBookshelfDialog.setTag(hash)
     } else {
-        bookButtonManager.closeAllDialogs();
         searchBookshelfDialog.close();
     }
 }
@@ -141,7 +153,6 @@ function checkHashes() {
 window.addEventListener("popstate", () => {
     checkHashes();
 });
-
 
 document.addEventListener("DOMContentLoaded", () => {
     checkHashes();
@@ -153,6 +164,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             loadAnimationStyleSheet();
         }, 100);
     }).catch(error => console.error('Failed to load theme:', error));
-    await loadBooks();
-    await loadUIComponents();
+
+    Promise.all([
+        loadBooks(),
+        loadSubjects(),
+        loadUIComponents()
+    ])
 });

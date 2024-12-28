@@ -4,8 +4,8 @@ export class TagButton {
     private tag: Books| Subjects;
     private tagButton: HTMLButtonElement;
     private unselectButton: HTMLButtonElement;
-    private tagName: string;
-    private tagID: string;
+    tagName: string;
+    tagID: string;
 
     constructor(tag: Books | Subjects) {
         this.tag = tag;
@@ -21,7 +21,7 @@ export class TagButton {
 
         const template = document.createElement('template') as HTMLTemplateElement;
         template.innerHTML = `
-        <button id="${this.tagID}" class="tag-button chip tiny-margin left-align" data-name="${this.tagName}">
+        <button id="${this.tagID}" class="tag-button round chip tiny-margin left-align" data-name="${this.tagName}">
             <i>${iconName}</i>
             <span>${this.tagName}</span>
             <a id="unselect-button" class="transparent none badge hidden no-padding">

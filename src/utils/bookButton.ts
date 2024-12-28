@@ -19,12 +19,9 @@ export class BookButton {
         `.trim();
 
         this.button = template.content.firstElementChild as HTMLButtonElement;
-        if (this.bookID === "baptism-booklet") {
-            this.button.onclick = () => window.location.href = `/baptism_booklet`;
-        } else {
-            this.button.onclick = () => window.location.hash = `#${this.bookID}`;
-        }
+        this.button.onclick = () => window.location.hash = `#${this.bookID}`;
     }
+
     getButton() {
         return this.button;
     }
