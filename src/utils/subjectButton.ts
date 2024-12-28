@@ -14,7 +14,7 @@ export class SubjectButton {
         template.innerHTML = `
         <button id="${this.subjectID}" class="tiny-margin left-align small-round link border subject-button l3 m4 s6" data-name="${this.subjectName}">
             <i>notes</i>
-            <span>${this.subjectName}</span>
+            <span class="small-text">${this.subjectName}</span>
         </button>
         `.trim();
 

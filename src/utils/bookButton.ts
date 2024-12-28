@@ -14,7 +14,7 @@ export class BookButton {
         template.innerHTML = `
         <button id="${this.bookID}" class="tiny-margin left-align small-round link border book-button l3 m4 s6" data-name="${this.bookName}">
             <i>book</i>
-            <span>${this.bookName}</span>
+            <span class="small-text">${this.bookName}</span>
         </button>
         `.trim();
 
