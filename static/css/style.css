@@ -1,30 +1,3 @@
-html,
-body,
-div,
-article,
-p,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-ul,
-li,
-span,
-a,
-button,
-input,
-textarea,
-select,
-details,
-summary,
-footer,
-nav {
-    transition: background-color 0.3s ease-in-out, color 0.1s ease;
-}
-
-
 .hidden {
     display: none !important;
 }
@@ -62,6 +35,7 @@ nav {
 ::selection {
     color: var(--on-primary);
     background-color: var(--primary);
+    font-weight: bold;
 }
 
 p.active-paragraph {
@@ -71,11 +45,11 @@ p.active-paragraph {
     pointer-events: none;
     background-color: inherit;
     color: inherit;
-    transition: filter 0.2s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    transition: filter var(--speed2) ease-in-out, background-color var(--speed2) ease-in-out, color var(--speed2) ease-in-out;
 }
 
 p {
-    transition: filter 0.2s ease-in-out, background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    transition: filter var(--speed2) ease-in-out, background-color var(--speed2) ease-in-out, color var(--speed2) ease-in-out;
 }
 
 p.active-paragraph.blur-none {
@@ -99,23 +73,26 @@ p.active-paragraph.blur-none {
     overflow-y: scroll;
 }
 
-details {
-    position: relative;
-    width: auto;
-    height: auto;
-    overflow: hidden;
-    transition: all 0.3s ease;
-
-    ::-webkit-details-marker {
-        display: none;
-    }
+details:not(.none) {
+    background-color: var(--primary) !important;
 }
 
-details[open] {
+details:not(.none)::-webkit-details-marker {
+    display: none;
+}
+
+details:not(.none) summary {
+    color: var(--on-primary) !important;
+}
+
+details:not(.none)[open] {
     height: auto;
-    max-height: 99em !important;
     border: 0.0625rem solid var(--primary) !important;
-    transition: max-height 1.3s ease;
+    background-color: var(--surface) !important;
+}
+
+details:not(.none)[open] summary {
+    color: var(--on-surface) !important;
 }
 
 span .highlight,
@@ -126,78 +103,4 @@ h6 .highlight {
     padding-left: 1px;
     padding-right: 1px;
     display: inline-block !important;
-}
-
-#install-pwa {
-    display: none
-}
-
-@media (display-mode: browser) {
-    #install-pwa {
-        display: flex
-    }
-}
-
-.slide-left {
-    animation: slideOutLeft 0.5s forwards;
-}
-
-@keyframes slideOutLeft {
-    0% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    100% {
-        transform: translateX(-110%);
-        opacity: 0;
-    }
-}
-
-.slide-right {
-    animation: slideOutRight 0.5s forwards;
-}
-
-@keyframes slideOutRight {
-    0% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-
-    100% {
-        transform: translateX(110%);
-        opacity: 0;
-    }
-}
-
-.slide-in-left {
-    animation: slideInFromLeft 0.5s forwards;
-}
-
-@keyframes slideInFromLeft {
-    0% {
-        transform: translateX(110%);
-        opacity: 0;
-    }
-
-    100% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-.slide-in-right {
-    animation: slideInFromRight 0.5s forwards;
-}
-
-@keyframes slideInFromRight {
-    0% {
-        transform: translateX(-110%);
-        opacity: 0;
-    }
-
-    100% {
-        transform: translateX(0);
-        opacity: 1;
-    }
 }

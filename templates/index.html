@@ -1,45 +1,31 @@
-<!DOCTYPE html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html lang="en">
 
 <head>
+    <title>Hutterite Bookshelf</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="author" content="Jared Gross">
+    <meta name="description" content="A comprehensive app for accessing, managing, and sharing Hutterite literature.">
+    <meta name="keywords" content="hutterite, bookshelf, songs, literature">
     <link rel="icon" href="/static/icons/favicon.png">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="manifest" href="/static/app.webmanifest">
-    <meta name="description" content="A comprehensive app for accessing, managing, and sharing Hutterite literature.">
-    <title>Hutterite Bookshelf</title>
 </head>
 
 <header class="fixed no-padding">
     <nav class="primary left-padding right-padding">
-        <button class="circle transparent" id="nav-bar-open">
-            <img class="responsive" fetchpriority="low" loading="lazy" src="/static/icons/favicon.png" alt="" width="32" height="32">
+        <button class="circle transparent" onclick="ui('#info-dialog')">
+            <img class="responsive logo" fetchpriority="low" loading="lazy" src="/static/icons/favicon.png" alt="" width="32" height="32">
         </button>
         <h5 class="max center-align small">Hutterite Bookshelf</h5>
         <button class="circle transparent">
             <i>more_vert</i>
             <menu class="no-wrap left">
-                <a class="row" id="text-increase">
-                    <i>text_increase</i>
-                    <span>Increase</span>
-                </a>
-                <a class="row" id="text-decrease">
-                    <i>text_decrease</i>
-                    <span>Decrease</span>
-                </a>
-                <a class="row" id="toggle-theme">
-                    <i></i>
-                    <span>Toggle Theme</span>
-                </a>
-                <a class="row" id="install-pwa">
-                    <i></i>
-                    <span>Install</span>
-                </a>
-                <a class="row" id="toggle-collections">
-                    <i>book</i>
-                    <span>Collections</span>
+                <a class="row" id="set-theme" onclick="ui('#set-theme-dialog')">
+                    <i>palette</i>
+                    <span>Color Theme</span>
                 </a>
                 <a class="row" id="privacy-policy" href="/privacy_policy">
                     <i>policy</i>
@@ -48,300 +34,151 @@
             </menu>
         </button>
     </nav>
-    <div class="tabs scroll no-margin no-padding" id="tabs">
-        <a class="active" data-ui="#home">
-            <i class="ri-home-5-line"></i>
-            <span>Home</span>
-        </a>
-        <a data-ui="#song">
-            <i class="ri-file-list-line"></i>
-            <span>Song Page</span>
-        </a>
-        <a data-ui="#sing-along-page">
-            <i class="ri-user-voice-line"></i>
-            <span>Sing-Along</span>
-        </a>
-    </div>
 </header>
 
-<div class="overlay blur"></div>
-<dialog class="left" id="nav-bar">
-    <div class="row max center-align">
-        <img class="responsive circle border" style="max-width: 150px; height: auto;" fetchpriority="low" loading="lazy" src="/static/icons/icon.png" alt="" width="128" height="128">
+<body class="dark">
+    <main class="responsive">
+        <details class="small-round" open>
+            <summary class="padding large-text">
+                Books
+            </summary>
+            <div class="grid no-margin tiny-padding surface small-round no-space" id="books-list">
+            </div>
+        </details>
+        <nav class="bottom fixed right-align transparent">
+            <button class="circle extra" id="search-button">
+                <i>search</i>
+            </button>
+        </nav>
+    </main>
+    <div class="snackbar primary" id="success-snackbar"></div>
+    <div class="snackbar" id="update-snackbar">
+        <div class="max" id="update-snackbar-text"></div>
+        <a class="inverse-link" id="update-snackbar-update">Update</a>
     </div>
-    <div class="padding">
-        <h5 class="small center-align" id="app-name-version">Hutterite Bookshelf</h5>
-        <p class="center-align">
-            A comprehensive app for accessing,<br>
-            managing, and sharing Hutterite literature.</p>
-        <p class="center-align">Developed with <i>favorite</i> by <a class="link" href="https://thecodingjsoftware.github.io/">TheCodingJ's</a></p>
-    </div>
-    <article class="border" style="margin-top: auto;">
-        <p class="center-align">
-            For questions, comments, suggestions, <br>
-            or concerns about this service please <br>
-            email: <a class="link" href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a>.
-        </p>
-    </article>
-    <nav class="right-align no-space">
-        <button class="transparent link small-round" id="nav-bar-close">Close</button>
-    </nav>
-</dialog>
+</body>
 
 <div class="overlay blur"></div>
 <dialog id="create-sing-along-dialog">
-    <h5 class="small center-align">Create a Sing-Along</h5>
-    <div class="padding">
-        <div class="field label border">
-            <input type="text" id="sing-along-id-label" autocomplete="off">
-            <label>Sing-Along ID</label>
-        </div>
-        <div class="field textarea label border">
-            <textarea id="sing-along-description-label" autocomplete="off"></textarea>
-            <label>Description</label>
-            <span class="helper">(Optional) Let people know what this Sing-Along is about.</span>
-        </div>
-        <br>
-        <label class="checkbox">
-            <input type="checkbox" id="sing-along-is-private-checkbox" autocomplete="off">
-            <span>Is Private</span>
-        </label>
+  <h5 class="small center-align">Create a Sing-Along</h5>
+  <div class="padding">
+      <div class="field label border">
+          <input type="text" id="sing-along-id-label" autocomplete="off">
+          <label>Sing-Along ID</label>
+      </div>
+      <div class="field textarea label border">
+          <textarea id="sing-along-description-label" autocomplete="off"></textarea>
+          <label>Description</label>
+          <span class="helper">(Optional) Let people know what this Sing-Along is about.</span>
+      </div>
+      <br>
+      <label class="checkbox">
+          <input type="checkbox" id="sing-along-is-private-checkbox" autocomplete="off">
+          <span>Is Private</span>
+      </label>
 
-    </div>
-    <nav class="right-align no-space">
-        <button class="small-round" id="create-sing-along-submit">
-            <i>check</i>
-            <span>Create</span>
-        </button>
-    </nav>
+  </div>
+  <nav class="right-align no-space">
+      <button class="small-round" id="create-sing-along-submit">
+          <i>check</i>
+          <span>Create</span>
+      </button>
+  </nav>
 </dialog>
 
 <div class="overlay blur"></div>
 <dialog id="join-sing-along-dialog">
-    <h5 class="small center-align">Join a Sing-Along</h5>
-    <div class="padding">
-        <p>Select a Sing-Along to join</p>
-        <article class="scroll padding" id="sing-along-id-container"></article>
-    </div>
+  <h5 class="small center-align">Join a Sing-Along</h5>
+  <div class="padding">
+      <p>Select a Sing-Along to join</p>
+      <article class="scroll padding" id="sing-along-id-container"></article>
+  </div>
 </dialog>
 
 <div class="overlay blur"></div>
 <dialog class="max" id="add-song-dialog">
-    <h5 class="small center-align">Add Songs</h5>
-    <div class="field label prefix border">
-        <i class="front">folder</i>
-        <input type="text" id="add-song-folder-name-input">
-        <label>Folder Name</label>
-        <span class="helper">To add sub-folders use a forward slash (/) to separate the folder names.</span>
-    </div>
-    <br>
-    <label class="checkbox">
-        <input type="checkbox" id="add-song-folder-is-private" autocomplete="off">
-        <span>Is Private</span>
-    </label>
-    <br>
-    <div id="selected-songs-container">
-        <h5>Selected Songs</h5>
-        <article class="scroll medium padding" id="selected-songs-list">
-        </article>
-    </div>
-    <nav class="right-align transparent">
-        <button class="small-round" id="add-group-dialog-submit">
-            <i>add</i>
-            <span>Add Song</span>
-        </button>
-        <button class="transparent link small-round" id="add-group-dialog-close">
-            <span>Close</span>
-        </button>
-    </nav>
+  <h5 class="small center-align">Add Songs</h5>
+  <div class="field label prefix border">
+      <i class="front">folder</i>
+      <input type="text" id="add-song-folder-name-input">
+      <label>Folder Name</label>
+      <span class="helper">To add sub-folders use a forward slash (/) to separate the folder names.</span>
+  </div>
+  <br>
+  <label class="checkbox">
+      <input type="checkbox" id="add-song-folder-is-private" autocomplete="off">
+      <span>Is Private</span>
+  </label>
+  <br>
+  <div id="selected-songs-container">
+      <h5>Selected Songs</h5>
+      <article class="scroll medium padding" id="selected-songs-list">
+      </article>
+  </div>
+  <nav class="right-align transparent">
+      <button class="small-round" id="add-group-dialog-submit">
+          <i>add</i>
+          <span>Add Song</span>
+      </button>
+      <button class="transparent link small-round" id="add-group-dialog-close">
+          <span>Close</span>
+      </button>
+  </nav>
 </dialog>
 
 <div class="overlay blur"></div>
 <dialog class="max" id="create-song-dialog">
-    <h5 class="small center-align">Create Song</h5>
-    <div class="field label prefix border">
-        <i class="front">folder</i>
-        <input type="text" id="create-song-folder-name-input">
-        <label>Folder Name</label>
-        <span class="helper">To add sub-folders use a forward slash (/) to separate the folder names.</span>
-    </div>
-    <br>
-    <div class="field label prefix border">
-        <i class="front">folder</i>
-        <input type="text" id="create-song-name-input">
-        <label>Song Name</label>
-    </div>
-    <label class="checkbox">
-        <input type="checkbox" id="create-song-folder-is-private" autocomplete="off">
-        <span>Is Private</span>
-    </label>
-    <br>
-    <div class="field textarea label border extra">
-        <textarea id="song-contents-input" autocomplete="off"></textarea>
-        <label>Song Contents</label>
-    </div>
-    <nav class="right-align transparent">
-        <button class="small-round" id="create-group-dialog-submit">
-            <i>add</i>
-            <span>Add Song</span>
-        </button>
-        <button class="transparent link small-round" id="create-group-dialog-close">
-            <span>Close</span>
-        </button>
-    </nav>
+  <h5 class="small center-align">Create Song</h5>
+  <div class="field label prefix border">
+      <i class="front">folder</i>
+      <input type="text" id="create-song-folder-name-input">
+      <label>Folder Name</label>
+      <span class="helper">To add sub-folders use a forward slash (/) to separate the folder names.</span>
+  </div>
+  <br>
+  <div class="field label prefix border">
+      <i class="front">folder</i>
+      <input type="text" id="create-song-name-input">
+      <label>Song Name</label>
+  </div>
+  <label class="checkbox">
+      <input type="checkbox" id="create-song-folder-is-private" autocomplete="off">
+      <span>Is Private</span>
+  </label>
+  <br>
+  <div class="field textarea label border extra">
+      <textarea id="song-contents-input" autocomplete="off"></textarea>
+      <label>Song Contents</label>
+  </div>
+  <nav class="right-align transparent">
+      <button class="small-round" id="create-group-dialog-submit">
+          <i>add</i>
+          <span>Add Song</span>
+      </button>
+      <button class="transparent link small-round" id="create-group-dialog-close">
+          <span>Close</span>
+      </button>
+  </nav>
 </dialog>
 
 <div class="overlay blur"></div>
 <dialog class="right" id="custom-collections-dialog">
-    <h5 class="small center-align">Custom Collections</h5>
-    <p class="center-align">
-        You need to be connected to the<br>
-        internet to use this feature.
-    </p>
-    <div class="scroll" id="custom-folders-list">
-    </div>
-    <nav class="right-align transparent">
-        <button class="small-round" id="custom-collections-dialog-apply">
-            <i>check</i>
-            <span>Apply</span>
-        </button>
-        <button class="transparent link small-round" id="custom-collections-dialog-close">
-            <span>Close</span>
-        </button>
-    </nav>
+  <h5 class="small center-align">Custom Collections</h5>
+  <p class="center-align">
+      You need to be connected to the<br>
+      internet to use this feature.
+  </p>
+  <div class="scroll" id="custom-folders-list">
+  </div>
+  <nav class="right-align transparent">
+      <button class="small-round" id="custom-collections-dialog-apply">
+          <i>check</i>
+          <span>Apply</span>
+      </button>
+      <button class="transparent link small-round" id="custom-collections-dialog-close">
+          <span>Close</span>
+      </button>
+  </nav>
 </dialog>
-
-<body>
-    <main class="responsive">
-        <div class="snackbar primary" id="success-snackbar"></div>
-        <div class="snackbar" id="update-snackbar">
-            <div class="max" id="update-snackbar-text"></div>
-            <a class="inverse-link" id="update-snackbar-update">Update</a>
-          </div>
-        <div class="snackbar error" id="error-snackbar"></div>
-
-        <div class="page active" id="home">
-            <div class="field label prefix border margin" id="search-songs">
-                <i>search</i>
-                <input type="text" id="search-songs-input" autocomplete="off">
-                <label>Search songs</label>
-                <span class="helper"></span>
-            </div>
-            <div class="row center-align">
-                <div class="center-align" id="progress-bar-container">
-                    <progress class="circle large"></progress>
-                    <p>Loading...</p>
-                </div>
-            </div>
-            <div class="padding" id="file-list"></div>
-            <div id="custom-collections-container">
-                <h5 class="small center-align">Custom Collections</h5>
-                <div class="padding" id="custom-collections-file-list"></div>
-            </div>
-        </div>
-
-        <div class="page" id="song">
-            <div class="field label prefix border margin" id="search-song">
-                <i>search</i>
-                <input type="text" id="search-song-content-input" autocomplete="off">
-                <label>Search song</label>
-                <span class="helper"></span>
-            </div>
-            <h5 id="file-name-header" class="padding"></h5>
-            <div id="file-content" class="padding scroll">Select a song from the home page</div>
-        </div>
-
-        <div class="page" id="sing-along-page">
-            <div class="padding center-align middle-align transparent">
-                <div class="grid" id="sing-along-controls">
-                    <button class="small-round s6" id="open-create-sing-along-dialog">
-                        <i>group_add</i>
-                        <span>Create</span>
-                    </button>
-                    <button class="small-round s6" id="open-join-sing-along-dialog">
-                        <i>adaptive_audio_mic</i>
-                        <span>Join</span>
-                    </button>
-                </div>
-                <div class="field label prefix border margin" id="search-song">
-                    <i>search</i>
-                    <input type="text" id="search-song-content-input" autocomplete="off">
-                    <label>Search song</label>
-                    <span class="helper"></span>
-                </div>
-                <h5 id="file-name-header" class="padding"></h5>
-                <div id="file-content" class="padding scroll"></div>
-            </div>
-        </div>
-    </main>
-</body>
-
-<footer class="fixed" id="home-nav">
-    <nav class="bottom">
-        <div class="middle-align row">
-            <label class="checkbox">
-                <input type="checkbox" id="select-songs-toggle" autocomplete="off">
-                <span>Select Songs</span>
-            </label>
-        </div>
-        <button class="circle transparent" id="clear-selection">
-            <i>delete_forever</i>
-        </button>
-        <div class="max"></div>
-        <button class="square round extra" id="add-group">
-            <i>add</i>
-        </button>
-    </nav>
-</footer>
-
-<footer class="fixed" id="song-nav" style="display: none;">
-    <nav class="bottom">
-        <button class="circle transparent" id="prev-song">
-            <i>arrow_left</i>
-        </button>
-
-        <div class="max"></div>
-
-        <button class="circle transparent" id="prev-paragraph">
-            <i>arrow_upward</i>
-            <div class="tooltip">You can also double-tap on<br>the left side of the screen<br>to go the previous paragraph.</div>
-        </button>
-
-        <label class="checkbox icon">
-            <input type="checkbox" id="toggle-paragraph-view" autocomplete="off">
-            <span>
-                <i>visibility_off</i>
-                <i>visibility</i>
-            </span>
-            <div class="tooltip">Toggle between viewing<br>the entire song or just the<br>current paragraph.</div>
-        </label>
-
-        <button class="circle transparent" id="next-paragraph">
-            <i>arrow_downward</i>
-            <div class="tooltip">You can also double-tap on<br>the right side of the screen<br>to go the next paragraph.</div>
-        </button>
-
-        <div class="max"></div>
-
-        <button class="circle transparent" id="next-song">
-            <i>arrow_right</i>
-        </button>
-    </nav>
-</footer>
-
-<footer class="fixed" id="sing-along-nav" style="display: none;">
-    <nav class="bottom">
-        <button class="circle transparent" id="sing-along-logout" style="display: none;">
-            <i>logout</i>
-        </button>
-        <button class="circle transparent" id="end-sing-along" style="display: none;">
-            <i>logout</i>
-        </button>
-        <div class="max"></div>
-        <button class="square round extra" id="sing-along-sync" style="display: none;">
-            <i>sync</i>
-        </button>
-    </nav>
-</footer>
 
 </html>

@@ -24,3 +24,7 @@ settings.gradle
 twa-manifest.json
 gradle/
 manifest-checksum.txt
+data/
+compile_audio.py
+generate.py
+test.py
