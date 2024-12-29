@@ -6,11 +6,13 @@ import { TagButton } from "../utils/tagButton";
 export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
     title: string = "Search Bookshelf";
     dialog: HTMLDialogElement;
+    searchBar: HTMLDivElement;
     searchInput: HTMLInputElement;
     songList: HTMLDivElement;
     closeButton: HTMLButtonElement;
-    clearTagsButton: HTMLButtonElement;
     tagButtons: TagButton[] = [];
+    progressBar: HTMLProgressElement;
+    enabledTagsBadge: HTMLDivElement;
 
     constructor() {
         super();
@@ -18,41 +20,44 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         const template = document.createElement('template') as HTMLTemplateElement;
         template.innerHTML = `
             <dialog id="search-dialog">
+                <div class="row center">
+                    <h6 class="max left-align">Search Bookshelf</h6>
+                    <button class="transparent link circle" id="close-dialog">
+                        <i>close</i>
+                    </button>
+                </div>
                 <div class="row">
-                    <div class="field label prefix suffix border small max">
+                    <button class="circle">
+                        <i>filter_alt</i>
+                        <menu class="right small-round" style="width: calc(100vw - 50px); max-width: 400px;">
+                            <div id="books-tag-list">
+                            </div>
+                            <hr class="tiny-margin">
+                            <div id="subjects-tag-list">
+                            </div>
+                        </menu>
+                        <div class="badge" id="enabled-tags-badge"></div>
+                    </button>
+                    <div class="field label prefix border round small max" id="search-bar">
                         <i>search</i>
                         <input type="search" type="text" id="search-input" spellcheck="false" autocapitalize="off" autocomplete="off" autofocusoff/>
                         <label>Search</label>
+                        <progress id="search-progress" class="circle hidden"></progress>
                         <span class="helper">Search using song titles or numbers</span>
                     </div>
                 </div>
-                <div class="large-space"></div>
-                <div class="row">
-                    <label class="max">Select tags</label>
-                    <button class="transparent link circle" id="clear-tags-button">
-                        <i>delete</i>
-                    </button>
-                </div>
-                <nav class="no-margin no-space scroll medium-width" id="books-tag-list">
-                </nav>
-                <nav class="no-margin no-space scroll medium-width" id="subjects-tag-list">
-                </nav>
-                <h6>Songs</h6>
                 <div id="song-list">
                 </div>
-                <nav class="bottom transparent right-align">
-                    <button class="transparent link small-round" id="close-dialog">
-                        <span>Close</span>
-                    </button>
-                </nav>
             </dialog>
         `.trim();
 
         this.dialog = template.content.firstElementChild as HTMLDialogElement;
-        this.searchInput = this.dialog.querySelector("#search-input") as HTMLInputElement;
+        this.searchBar = this.dialog.querySelector("#search-bar") as HTMLDivElement;
+        this.searchInput = this.searchBar.querySelector("#search-input") as HTMLInputElement;
         this.songList = this.dialog.querySelector("#song-list") as HTMLDivElement;
         this.closeButton = this.dialog.querySelector("#close-dialog") as HTMLButtonElement;
-        this.clearTagsButton = this.dialog.querySelector("#clear-tags-button") as HTMLButtonElement;
+        this.progressBar = this.dialog.querySelector("#search-progress") as HTMLProgressElement;
+        this.enabledTagsBadge = this.dialog.querySelector("#enabled-tags-badge") as HTMLDivElement;
         this.init();
     }
 
@@ -69,15 +74,11 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         this.searchInput.addEventListener("input", () => {
             const searchTerm = this.searchInput.value.toLowerCase();
             this.addSearchToLocalStorage(searchTerm);
+            this.search(searchTerm);
         });
+
         this.closeButton.onclick = () => this.close();
         this.setSearchTermFromLocalStorage();
-
-        this.clearTagsButton.onclick = () => {
-            this.tagButtons.forEach(tagButton => {
-                tagButton.unselect();
-            });
-        };
 
         this.loadBookTags();
         this.loadSubjectTags();
@@ -86,7 +87,7 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
     public loadBookTags() {
         const booksTagList = this.dialog.querySelector("#books-tag-list") as HTMLDivElement;
         for (const tag of Object.values(Tags.BOOKS)) {
-            const tagButton = new TagButton(tag);
+            const tagButton = new TagButton(tag, this);
             booksTagList.appendChild(tagButton.getButton());
             this.tagButtons.push(tagButton);
         }
@@ -95,10 +96,20 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
     public loadSubjectTags() {
         const subjectsTagList = this.dialog.querySelector("#subjects-tag-list") as HTMLDivElement;
         for (const tag of Object.values(Tags.GERMAN_SUBJECTS)) {
-            const tagButton = new TagButton(tag);
+            const tagButton = new TagButton(tag, this);
             subjectsTagList.appendChild(tagButton.getButton());
             this.tagButtons.push(tagButton);
         }
+    }
+
+    public updateEnabledTagsBadge(){
+        const enabledTags = this.tagButtons.filter(tagButton => tagButton.isSelected()).length;
+        if (enabledTags === 0) {
+            this.enabledTagsBadge.classList.add("hidden");
+            return;
+        }
+        this.enabledTagsBadge.classList.remove("hidden");
+        this.enabledTagsBadge.textContent = enabledTags.toString();
     }
 
     public addSearchToLocalStorage(searchTerm: string){
@@ -115,13 +126,18 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         }
     }
 
-    private showClearTagButton(){
-        this.clearTagsButton.style.display = "block";
-    }
-
     private clearSearchFromLocalStorage() {
         const key = `search-${this.title}`;
         localStorage.removeItem(key);
+    }
+
+    private search(searchTerm: string){
+        this.progressBar.classList.remove("hidden");
+        this.searchBar.classList.add("suffix");
+        setTimeout(() => {
+            this.progressBar.classList.add("hidden");
+            this.searchBar.classList.remove("suffix");
+        }, 1000);
     }
 
     public open(){

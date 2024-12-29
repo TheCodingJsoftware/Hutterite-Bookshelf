@@ -31,6 +31,10 @@
                     <i>policy</i>
                     <span>Privacy Policy</span>
                 </a>
+                <a class="row" id="set-theme" onclick="ui('#info-dialog')">
+                    <i>info</i>
+                    <span>About</span>
+                </a>
             </menu>
         </button>
     </nav>
@@ -53,11 +57,6 @@
             <div class="grid no-margin tiny-padding surface small-round no-space" id="subjects-list">
             </div>
         </details>
-        <nav class="bottom fixed right-align transparent">
-            <button class="circle extra" id="search-button">
-                <i>search</i>
-            </button>
-        </nav>
     </main>
     <div class="snackbar primary" id="success-snackbar"></div>
     <div class="snackbar" id="update-snackbar">
@@ -65,6 +64,39 @@
         <a class="inverse-link" id="update-snackbar-update">Update</a>
     </div>
 </body>
+
+<footer class="surface fixed">
+    <div class="max field large prefix round no-margin fill active" id="search-bar">
+        <button class="front middle left circle absolute transparent no-border" id="search-icon">
+            <i>search</i>
+        </button>
+        <input type="search" type="text" id="search-input-bar" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Search bookshelf" autofocusoff/>
+        <progress id="search-progress" class="circle hidden"></progress>
+        <menu class="max">
+            <div class="field large prefix suffix no-margin fixed">
+                <i class="front">arrow_back</i>
+                <input type="search" type="text" id="search-input" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Search bookshelf" autofocusoff/>
+                <i class="front">close</i>
+            </div>
+            <div id="history-list">
+                <a class="row">
+                    <i>history</i>
+                    <div>Item 1</div>
+                </a>
+                <a class="row">
+                    <i>history</i>
+                    <div>Item 2</div>
+                </a>
+                <a class="row">
+                    <i>history</i>
+                    <div>Item 3</div>
+                </a>
+            </div>
+            <div id="results-list">
+            </div>
+        </menu>
+    </div>
+</footer>
 
 <div class="overlay blur"></div>
 <dialog id="create-sing-along-dialog">

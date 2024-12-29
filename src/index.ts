@@ -11,6 +11,7 @@ import { SubjectButton } from "./utils/subjectButton";
 const searchBookshelfDialog = new SearchBookshelfDialog();
 searchBookshelfDialog.attachTo();
 
+
 function showUpdateCompleteSnackbar(message: string) {
     const snackbar = document.getElementById("update-snackbar") as HTMLDivElement;
     const snackbarUpdate = snackbar.querySelector(
@@ -123,8 +124,23 @@ async function loadUIComponents() {
         const infoDialog = new InfoDialog();
         infoDialog.attachTo();
 
-        const searchButton = document.getElementById("search-button") as HTMLButtonElement;
-        searchButton.onclick = () => window.location.hash = "#search";
+        const searchBar = document.getElementById("search-bar") as HTMLDivElement;
+        const searchIcon = searchBar.querySelector("#search-icon") as HTMLButtonElement;
+        const searchInputBar = searchBar.querySelector("#search-input-bar") as HTMLInputElement;
+        const searchInput = searchBar.querySelector("#search-input") as HTMLInputElement;
+
+        searchInputBar.addEventListener("click", () => {
+            searchInput.select();
+            searchInput.focus();
+        });
+
+        searchIcon.addEventListener("click", () => {
+            searchInputBar.click();
+            setTimeout(() => {
+                searchInput.select();
+                searchInput.focus();
+            }, 50);
+        });
     } catch (error) {
         console.error("Error loading UI components:", error);
     }
@@ -137,12 +153,7 @@ function checkHashes() {
         window.location.href = "/baptism_booklet";
         return;
     }
-    if (hash === "#search") {
-        searchBookshelfDialog.open();
-        setTimeout(() => {
-            searchBookshelfDialog.searchInput.focus();
-        }, 50);
-    } else if (hash !== "#search" && hash !== "") {
+    if (hash !== "") {
         searchBookshelfDialog.open();
         searchBookshelfDialog.setTag(hash)
     } else {
