@@ -38,6 +38,7 @@ export class SetThemeDialog extends Overlay {
                         <button class="l2 m2 s3 center-align circle small orange" data-color="#ff9800" id="theme-button"></button>
                         <button class="l2 m2 s3 center-align circle small deep-orange" data-color="#ff5722" id="theme-button"></button>
                     </div>
+                    <div class="small-space"></div>
                     <div class="row center-align">
                         <button class="small-round">
                             <i>palette</i>
@@ -56,7 +57,7 @@ export class SetThemeDialog extends Overlay {
                     <label class="switch icon">
                         <input type="checkbox" id="toggle-mode" autocomplete="off">
                         <span>
-                            <i>dark_mode</i>
+                            <i id="mode-icon">dark_mode</i>
                         </span>
                     </label>
                 </nav>
@@ -86,13 +87,15 @@ export class SetThemeDialog extends Overlay {
             }
         });
 
+        const modeIcon = this.dialog.querySelector("#mode-icon") as HTMLElement;
         const toggleModeButton = this.dialog.querySelector("#toggle-mode") as HTMLInputElement;
         toggleModeButton.checked = await appSettings.getSetting("mode", "dark") === "dark";
-
         toggleModeButton.addEventListener("change", () => {
             const newMode = toggleModeButton.checked ? "dark" : "light";
             setMode(newMode);
+            modeIcon.textContent = toggleModeButton.checked ? "dark_mode" : "light_mode";
         });
+        modeIcon.textContent = toggleModeButton.checked ? "dark_mode" : "light_mode";
 
         const themeButtons = this.dialog.querySelectorAll("#theme-button") as NodeListOf<HTMLButtonElement>;
         themeButtons.forEach(button => {

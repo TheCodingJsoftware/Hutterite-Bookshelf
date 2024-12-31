@@ -6,37 +6,37 @@ import { TagButton } from "../utils/tagButton";
 export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
     title: string = "Search Bookshelf";
     dialog: HTMLDialogElement;
+    closeButton: HTMLButtonElement;
     searchBar: HTMLDivElement;
     searchInput: HTMLInputElement;
     songList: HTMLDivElement;
-    closeButton: HTMLButtonElement;
     tagButtons: TagButton[] = [];
     progressBar: HTMLProgressElement;
-    enabledTagsBadge: HTMLDivElement;
+    tagBadgeCount: HTMLDivElement;
 
     constructor() {
         super();
         super.attachTo();
         const template = document.createElement('template') as HTMLTemplateElement;
         template.innerHTML = `
-            <dialog id="search-dialog">
-                <div class="row center">
-                    <h6 class="max left-align">Search Bookshelf</h6>
-                    <button class="transparent link circle" id="close-dialog">
-                        <i>close</i>
-                    </button>
-                </div>
+            <dialog class="large-width" id="search-dialog">
+                <nav>
+                    <button id="close-button" class="transparent link circle m l"><i>close</i></button>
+                </nav>
                 <div class="row">
                     <button class="circle">
                         <i>filter_alt</i>
-                        <menu class="right small-round" style="width: calc(100vw - 50px); max-width: 400px;">
-                            <div id="books-tag-list">
-                            </div>
+                            <menu class="right small-round" style="width: calc(100vw - 50px); max-width: 400px;">
+                            <label class="left-padding">Languages</label>
+                            <div id="languages-tag-list"></div>
                             <hr class="tiny-margin">
-                            <div id="subjects-tag-list">
-                            </div>
+                            <label class="left-padding">Books</label>
+                            <div id="books-tag-list"></div>
+                            <hr class="tiny-margin">
+                            <label class="left-padding">Subjects</label>
+                            <div id="subjects-tag-list"></div>
                         </menu>
-                        <div class="badge" id="enabled-tags-badge"></div>
+                        <div class="badge border" id="tag-count"></div>
                     </button>
                     <div class="field label prefix border round small max" id="search-bar">
                         <i>search</i>
@@ -46,18 +46,19 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
                         <span class="helper">Search using song titles or numbers</span>
                     </div>
                 </div>
+                <div class="small-space"></div>
                 <div id="song-list">
                 </div>
             </dialog>
         `.trim();
 
         this.dialog = template.content.firstElementChild as HTMLDialogElement;
+        this.closeButton = this.dialog.querySelector("#close-button") as HTMLButtonElement;
         this.searchBar = this.dialog.querySelector("#search-bar") as HTMLDivElement;
         this.searchInput = this.searchBar.querySelector("#search-input") as HTMLInputElement;
         this.songList = this.dialog.querySelector("#song-list") as HTMLDivElement;
-        this.closeButton = this.dialog.querySelector("#close-dialog") as HTMLButtonElement;
         this.progressBar = this.dialog.querySelector("#search-progress") as HTMLProgressElement;
-        this.enabledTagsBadge = this.dialog.querySelector("#enabled-tags-badge") as HTMLDivElement;
+        this.tagBadgeCount = this.dialog.querySelector("#tag-count") as HTMLDivElement;
         this.init();
     }
 
@@ -71,15 +72,21 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
                 lastWidth = currentWidth;
             }
         });
+
+        this.closeButton.onclick = () => {
+            this.close();
+            window.location.hash = "";
+        }
+
         this.searchInput.addEventListener("input", () => {
             const searchTerm = this.searchInput.value.toLowerCase();
             this.addSearchToLocalStorage(searchTerm);
             this.search(searchTerm);
         });
 
-        this.closeButton.onclick = () => this.close();
         this.setSearchTermFromLocalStorage();
 
+        this.loadLanguageTags();
         this.loadBookTags();
         this.loadSubjectTags();
     }
@@ -102,14 +109,23 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         }
     }
 
+    public loadLanguageTags() {
+        const languageTagList = this.dialog.querySelector("#languages-tag-list") as HTMLDivElement;
+        for (const tag of Object.values(Tags.LANGUAGES)) {
+            const tagButton = new TagButton(tag, this);
+            languageTagList.appendChild(tagButton.getButton());
+            this.tagButtons.push(tagButton);
+        }
+    }
+
     public updateEnabledTagsBadge(){
         const enabledTags = this.tagButtons.filter(tagButton => tagButton.isSelected()).length;
         if (enabledTags === 0) {
-            this.enabledTagsBadge.classList.add("hidden");
+            this.tagBadgeCount.classList.add("hidden");
             return;
         }
-        this.enabledTagsBadge.classList.remove("hidden");
-        this.enabledTagsBadge.textContent = enabledTags.toString();
+        this.tagBadgeCount.classList.remove("hidden");
+        this.tagBadgeCount.textContent = enabledTags.toString();
     }
 
     public addSearchToLocalStorage(searchTerm: string){
@@ -150,9 +166,11 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
         this.tagButtons.forEach(tagButton => {
             tagButton.unselect();
         });
-        const tag = hash.replace("#", "");
+        // The hash parameter likely contains a URL-encoded value (e.g., %C3%A4 instead of ä for väterlieder).
+        const tag = decodeURIComponent(hash.replace("#", ""));
         this.tagButtons.forEach(tagButton => {
             if (tagButton.tagID === tag) {
+
                 tagButton.select();
                 tagButton.getButton().scrollIntoView({
                     behavior: "smooth",
@@ -167,8 +185,6 @@ export class SearchBookshelfDialog extends Overlay implements AutoSizeDialog {
     public close(){
         super.hideOverlay();
         this.dialog.close();
-        window.location.hash = "";
-        // this.clearSearchFromLocalStorage()
     }
 
     adjustDialogForScreenSize() {

@@ -1,15 +1,15 @@
 import { SearchBookshelfDialog } from "../dialogs/searchBookshelfDialog";
-import { Books, Subjects } from "./tags";
+import { Books, Subjects, Languages } from "./tags";
 
 export class TagButton {
     private parent: SearchBookshelfDialog;
-    private tag: Books| Subjects;
+    private tag: Books| Subjects | Languages;
     private tagButton: HTMLButtonElement;
     private unselectButton: HTMLButtonElement;
     tagName: string;
     tagID: string;
 
-    constructor(tag: Books | Subjects, parent: SearchBookshelfDialog) {
+    constructor(tag: Books | Subjects | Languages, parent: SearchBookshelfDialog) {
         this.tag = tag;
         this.parent = parent;
         this.tagID = this.tag.valueOf().toLowerCase().replace(/_/g, "-").replace(/ /g, "-");
@@ -20,6 +20,8 @@ export class TagButton {
             iconName = "notes";
         } else if (Object.values(Books).includes(this.tag as Books)) {
             iconName = "book";
+        } else if (Object.values(Languages).includes(this.tag as Languages)) {
+            iconName = "translate";
         }
 
         const template = document.createElement('template') as HTMLTemplateElement;

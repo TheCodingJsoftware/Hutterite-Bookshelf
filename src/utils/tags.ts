@@ -23,7 +23,13 @@ export enum Subjects {
     CHILDRENS_SONGS = "Kinderlieder",
 };
 
+export enum Languages {
+    GERMAN = "German",
+    ENGLISH = "English",
+}
+
 export class Tags {
     static readonly BOOKS = Books;
     static readonly GERMAN_SUBJECTS = Subjects;
+    static readonly LANGUAGES = Languages;
 }

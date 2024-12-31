@@ -4,12 +4,27 @@ import "remixicon/fonts/remixicon.css";
 import "../static/css/style.css";
 import { loadTheme, loadAnimationStyleSheet } from "./utils/theme";
 import { SearchBookshelfDialog } from "./dialogs/searchBookshelfDialog";
+import { SetThemeDialog } from "./dialogs/themeDialog";
+import { InfoDialog } from "./dialogs/infoDialog";
+import { CollectionsDialog } from "./dialogs/collectionsDialog";
 import { Tags } from "./utils/tags";
 import { BookButton } from "./utils/bookButton";
 import { SubjectButton } from "./utils/subjectButton";
 
+const setThemeDialog = new SetThemeDialog();
+const infoDialog = new InfoDialog();
 const searchBookshelfDialog = new SearchBookshelfDialog();
+const sidePanelDialog = new CollectionsDialog();
+
+setThemeDialog.attachTo();
+infoDialog.attachTo();
 searchBookshelfDialog.attachTo();
+sidePanelDialog.attachTo();
+
+const searchBar = document.getElementById("search-bar") as HTMLDivElement;
+const searchInputBar = searchBar.querySelector("#search-input-bar") as HTMLInputElement;
+const searchIcon = searchBar.querySelector("#search-icon") as HTMLButtonElement;
+const sidePanelButton = document.getElementById("open-bookmarks-button") as HTMLButtonElement;
 
 
 function showUpdateCompleteSnackbar(message: string) {
@@ -110,37 +125,28 @@ async function loadSubjects(){
 
 async function loadUIComponents() {
     try {
-        const [themeDialogModule, infoDialogModule] = await Promise.all([
-            import("./dialogs/themeDialog"),
-            import("./dialogs/infoDialog"),
-        ]);
-
-        const { SetThemeDialog } = themeDialogModule;
-        const { InfoDialog } = infoDialogModule;
-
-        const setThemeDialog = new SetThemeDialog();
-        setThemeDialog.attachTo();
-
-        const infoDialog = new InfoDialog();
-        infoDialog.attachTo();
-
-        const searchBar = document.getElementById("search-bar") as HTMLDivElement;
-        const searchIcon = searchBar.querySelector("#search-icon") as HTMLButtonElement;
-        const searchInputBar = searchBar.querySelector("#search-input-bar") as HTMLInputElement;
-        const searchInput = searchBar.querySelector("#search-input") as HTMLInputElement;
-
-        searchInputBar.addEventListener("click", () => {
-            searchInput.select();
-            searchInput.focus();
-        });
-
         searchIcon.addEventListener("click", () => {
-            searchInputBar.click();
+            searchBookshelfDialog.open();
+            window.location.hash = "#search";
             setTimeout(() => {
-                searchInput.select();
-                searchInput.focus();
+                searchBookshelfDialog.searchInput.select();
+                searchBookshelfDialog.searchInput.focus();
             }, 50);
         });
+
+        searchInputBar.addEventListener("click", () => {
+            searchBookshelfDialog.open();
+            window.location.hash = "#search";
+            setTimeout(() => {
+                searchBookshelfDialog.searchInput.select();
+                searchBookshelfDialog.searchInput.focus();
+            }, 50);
+        });
+
+        sidePanelButton.addEventListener("click", () => {
+            window.location.hash = "#bookmarks";
+        });
+
     } catch (error) {
         console.error("Error loading UI components:", error);
     }
@@ -153,11 +159,21 @@ function checkHashes() {
         window.location.href = "/baptism_booklet";
         return;
     }
+    if (hash === "#bookmarks") {
+        sidePanelDialog.open();
+        return;
+    }
+    if (hash === "#search") {
+        searchBookshelfDialog.open();
+        return;
+    }
     if (hash !== "") {
         searchBookshelfDialog.open();
         searchBookshelfDialog.setTag(hash)
     } else {
+        searchBookshelfDialog.searchInput.blur();
         searchBookshelfDialog.close();
+        sidePanelDialog.close();
     }
 }
 

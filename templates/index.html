@@ -66,36 +66,17 @@
 </body>
 
 <footer class="surface fixed">
-    <div class="max field large prefix round no-margin fill active" id="search-bar">
-        <button class="front middle left circle absolute transparent no-border" id="search-icon">
-            <i>search</i>
+    <div class="row">
+        <button id="open-bookmarks-button" class="circle small-round transparent">
+            <i>side_navigation</i>
         </button>
-        <input type="search" type="text" id="search-input-bar" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Search bookshelf" autofocusoff/>
-        <progress id="search-progress" class="circle hidden"></progress>
-        <menu class="max">
-            <div class="field large prefix suffix no-margin fixed">
-                <i class="front">arrow_back</i>
-                <input type="search" type="text" id="search-input" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Search bookshelf" autofocusoff/>
-                <i class="front">close</i>
-            </div>
-            <div id="history-list">
-                <a class="row">
-                    <i>history</i>
-                    <div>Item 1</div>
-                </a>
-                <a class="row">
-                    <i>history</i>
-                    <div>Item 2</div>
-                </a>
-                <a class="row">
-                    <i>history</i>
-                    <div>Item 3</div>
-                </a>
-            </div>
-            <div id="results-list">
-            </div>
-        </menu>
-    </div>
+        <div class="max field large prefix round no-margin fill active" id="search-bar">
+            <button class="front middle left circle absolute transparent no-border" id="search-icon">
+                <i>search</i>
+            </button>
+            <input type="search" type="text" id="search-input-bar" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Search bookshelf" autofocusoff/>
+        </div>
+    <div>
 </footer>
 
 <div class="overlay blur"></div>

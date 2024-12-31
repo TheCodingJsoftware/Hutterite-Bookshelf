@@ -54,9 +54,9 @@ function checkLogos(){
     const hueRotateValue = `${hue}deg`;
     const logos = document.querySelectorAll(".logo") as NodeListOf<HTMLImageElement>;
     logos.forEach(logo => {
-
         logo.style.filter = `invert(${savedMode === "light" ? "1" : "0"}) hue-rotate(${hueRotateValue})`;
     });
+
 }
 
 export async function loadTheme() {

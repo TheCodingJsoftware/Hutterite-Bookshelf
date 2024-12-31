@@ -9,7 +9,10 @@ export class InfoDialog extends Overlay implements AutoSizeDialog {
         super.attachTo();
         const template = document.createElement('template') as HTMLTemplateElement;
         template.innerHTML = `
-            <dialog class="max" id="info-dialog">
+        <dialog class="max" id="info-dialog">
+            <nav>
+                <button class="transparent link circle" onclick="ui('#info-dialog')"><i>close</i></button>
+            </nav>
             <div class="row max center-align">
                 <img class="responsive circle border logo" style="max-width: 150px; height: auto;" fetchpriority="low" loading="lazy" src="/static/icons/icon.png" alt="" width="128" height="128">
             </div>
@@ -23,12 +26,12 @@ export class InfoDialog extends Overlay implements AutoSizeDialog {
                 <p class="center-align medium-width no-line">
                     For questions, comments, suggestions,
                     or concerns about this service please
-                    email: <a class="link" href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a>.
+                    email: <a class="link" href="mailto:jared@pinelandfarms.ca">jared@pinelandfarms.ca</a>
                 </p>
             </article>
-            <nav class="right-align no-space">
-                <button class="transparent link small-round" onclick="ui('#info-dialog')">Close</button>
-            </nav>
+            <div class="row center-align">
+                <a class="link small-text" href="/privacy_policy">Privacy Policy</a>
+            </div>
             </dialog>
         `.trim();
 
